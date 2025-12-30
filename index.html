@@ -6,84 +6,143 @@
     <title>AR生態探險：環境保育教育桌遊系統</title>
     
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-        body { margin: 0; overflow: hidden; font-family: "Microsoft JhengHei", sans-serif; background-color: #000; }
+        body { margin: 0; overflow: hidden; font-family: "Microsoft JhengHei", sans-serif; background-color: #000; user-select: none; }
         
-        /* 首頁樣式 */
+        /* 通用按鈕樣式 */
+        .btn { border: none; border-radius: 50px; cursor: pointer; transition: 0.2s; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .btn:active { transform: scale(0.95); }
+
+        /* --- 1. 首頁與選邊 UI --- */
         #home-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, #141E30 0%, #243B55 100%);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 2000; color: white; text-align: center;
         }
-        .menu-btn {
-            background: #4CAF50; color: white; padding: 15px 40px; border: none;
-            border-radius: 30px; font-size: 20px; cursor: pointer; margin: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s;
-        }
-        .menu-btn:active { transform: scale(0.95); }
-        .menu-btn:disabled { background: #cccccc !important; cursor: not-allowed; transform: none; }
-
-        /* 遊戲說明彈窗 */
-        #instruction-modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80%; max-width: 400px; background: white; color: #333;
-            padding: 20px; border-radius: 15px; display: none; z-index: 3000;
+        
+        #team-select-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 2100;
+            flex-direction: column; justify-content: center; align-items: center; color: white;
         }
 
-        /* 遊戲 UI */
-        #ui-layer { position: fixed; top: 10px; left: 10px; z-index: 1000; background: rgba(0,0,0,0.8); color: white; padding: 12px; border-radius: 8px; display: none; }
-        #quiz-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; background: white; padding: 25px; border-radius: 15px; display: none; width: 85%; max-width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .ans-btn { background: #2c3e50; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin: 8px 0; width: 100%; font-size: 16px; }
-        #result-msg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); color: white; display: none; z-index: 1002; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
+        .team-btn {
+            width: 200px; padding: 20px; margin: 15px; font-size: 24px; color: white;
+        }
+        .btn-blue { background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%); border: 2px solid #89a5e6; }
+        .btn-red { background: linear-gradient(90deg, #D31027 0%, #EA384D 100%); border: 2px solid #ff8a95; }
+
+        /* --- 2. 遊戲中 UI (分數與回合) --- */
+        #ui-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 1000; }
+        
+        /* 分數板 */
+        .score-board {
+            position: absolute; top: 15px; padding: 10px 20px; border-radius: 10px;
+            color: white; font-size: 18px; font-weight: bold;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        #score-blue-box { left: 15px; background: rgba(20, 50, 100, 0.8); border-left: 5px solid #4b6cb7; }
+        #score-red-box { right: 15px; background: rgba(100, 20, 20, 0.8); border-right: 5px solid #D31027; }
+        .big-score { font-size: 28px; }
+
+        /* 回合橫幅動畫 */
+        #turn-banner {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            padding: 10px 40px; border-radius: 30px;
+            font-size: 20px; color: white; font-weight: bold;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            transition: background 0.5s, border 0.5s;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.05); } 100% { transform: translateX(-50%) scale(1); } }
+
+        /* --- 3. 掃描成功大字卡 --- */
+        #theme-toast {
+            position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85); color: #FFD700;
+            padding: 30px 50px; border-radius: 20px; border: 3px solid #FFD700;
+            font-size: 40px; font-weight: bold; text-shadow: 0 0 10px orange;
+            display: none; z-index: 1500; white-space: nowrap;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { transform: translate(-50%, -50%) scale(0); } to { transform: translate(-50%, -50%) scale(1); } }
+
+        /* --- 4. 題目與結算 UI --- */
+        #quiz-box { 
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            z-index: 1600; background: white; padding: 25px; border-radius: 20px; 
+            display: none; width: 90%; max-width: 400px; text-align: center; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); pointer-events: auto;
+        }
+        .option-btn {
+            display: block; width: 100%; margin: 10px 0; padding: 12px;
+            background: #f0f0f0; border: 2px solid #ddd; border-radius: 10px;
+            font-size: 16px; cursor: pointer; text-align: left;
+        }
+        .option-btn:hover { background: #e0e0e0; }
+
+        #result-msg { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); color: white; display: none; 
+            z-index: 1700; flex-direction: column; justify-content: center; align-items: center; 
+            text-align: center; padding: 20px; pointer-events: auto;
+        }
     </style>
 </head>
 <body>
 
 <div id="home-screen">
-    <h1 style="font-size: 2.5em; margin-bottom: 10px;">AR 生態探險</h1>
-    <p style="margin-bottom: 40px; opacity: 0.9;">環境保育教育桌遊系統</p>
-    <button class="menu-btn" onclick="toggleInstructions(true)">遊戲說明</button>
-    <button id="start-btn" class="menu-btn" style="background: #2196F3;" disabled>遊戲開始</button>
-    <p id="status-msg" style="margin-top: 20px; font-size: 12px; opacity: 0.7;">系統載入中...</p>
+    <h1 style="font-size: 2.8em; text-shadow: 0 0 20px rgba(0,255,255,0.5);">AR 生態探險</h1>
+    <p style="opacity: 0.8; margin-bottom: 50px;">紅藍對抗・環境保育桌遊</p>
+    <button id="init-btn" class="btn" style="padding: 15px 50px; font-size: 22px; background: white; color: #333;" disabled>
+        系統載入中...
+    </button>
 </div>
 
-<div id="instruction-modal">
-    <h3>📖 遊戲說明</h3>
-    <p style="text-align: left; line-height: 1.6;">
-        1. 本遊戲需配合 10 張專屬生態卡牌。<br>
-        2. 掃描<b>破壞卡</b>：答對扣對手 10 分，答錯扣自己 10 分。<br>
-        3. 掃描<b>保育卡</b>：答對自己加 10 分，答錯不加分。<br>
-        4. 請確保在光線充足處進行掃描。
-    </p>
-    <button class="ans-btn" onclick="toggleInstructions(false)">我知道了</button>
+<div id="team-select-modal">
+    <h2>誰先開始？</h2>
+    <p>請擲骰子或猜拳決定先手</p>
+    <button class="btn team-btn btn-blue" onclick="startGame('blue')">藍方先攻</button>
+    <button class="btn team-btn btn-red" onclick="startGame('red')">紅方先攻</button>
 </div>
 
 <div id="ui-layer">
-    <div style="color:#4CAF50">我的分數：<span id="score-me">0</span></div>
-    <div style="color:#FF5252">對手分數：<span id="score-opp">0</span></div>
+    <div id="score-blue-box" class="score-board">
+        <span>藍方 (BLUE)</span>
+        <span id="score-blue" class="big-score">0</span>
+    </div>
+    <div id="score-red-box" class="score-board">
+        <span>紅方 (RED)</span>
+        <span id="score-red" class="big-score">0</span>
+    </div>
+    
+    <div id="turn-banner">準備開始...</div>
 </div>
 
+<div id="theme-toast">主題名稱</div>
+
 <div id="quiz-box">
-    <h3 id="card-title" style="margin-top:0; color:#2c3e50"></h3>
-    <p id="question-text" style="color:#333; line-height:1.6"></p>
-    <div id="options-area"></div>
+    <h3 id="q-category" style="color: #666; font-size: 14px; margin:0;">分類</h3>
+    <h2 id="q-title" style="color: #333; margin: 5px 0 15px 0;">主題</h2>
+    <p id="q-text" style="font-size: 18px; font-weight: bold; line-height: 1.5; text-align: left;">題目載入中...</p>
+    <div id="q-options"></div>
 </div>
 
 <div id="result-msg">
-    <h2 id="feedback-title"></h2>
-    <p id="feedback-body"></p>
-    <button class="ans-btn" style="width:150px" onclick="closeFeedback()">繼續</button>
+    <h1 id="res-title" style="font-size: 60px; margin: 0;"></h1>
+    <h3 id="res-score" style="color: yellow;"></h3>
+    <p id="res-detail" style="font-size: 18px; margin-top: 20px; max-width: 80%; line-height: 1.6;"></p>
+    <button class="btn" style="background: white; color: black; padding: 15px 40px; margin-top: 30px;" onclick="nextTurn()">
+        換對方回合
+    </button>
 </div>
 
 <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; filterMinCF:0.001; filterBeta:0.01;" 
-         color-space="sRGB" 
-         renderer="colorManagement: true, physicallyCorrectLights" 
-         vr-mode-ui="enabled: false" 
-         device-orientation-permission-ui="enabled: false">
+         color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" 
+         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
     
     <a-assets>
         <video id="v0" src="./videos/v0.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
@@ -106,170 +165,333 @@
             const target = document.createElement('a-entity');
             target.setAttribute('mindar-image-target', `targetIndex: ${i}`);
             target.id = `marker${i}`;
-            const videoPlane = document.createElement('a-video');
-            videoPlane.setAttribute('src', `#v${i}`);
-            videoPlane.setAttribute('width', '1');
-            videoPlane.setAttribute('height', '0.75');
-            videoPlane.setAttribute('position', '0 0 0');
-            target.appendChild(videoPlane);
+            const vp = document.createElement('a-video');
+            vp.setAttribute('src', `#v${i}`);
+            vp.setAttribute('width', '1');
+            vp.setAttribute('height', '0.75');
+            target.appendChild(vp);
             scene.appendChild(target);
         }
     </script>
 </a-scene>
 
 <script>
-    let myScore = 0, oppScore = 0, isLocked = false;
-    let isSystemReady = false;
-
-    // 檢查系統是否準備就緒
-    function checkSystemReady() {
-        const statusMsg = document.getElementById('status-msg');
-        const startBtn = document.getElementById('start-btn');
-        
-        // 修正重點 3: AFRAME 載入檢查
-        if (typeof AFRAME !== 'undefined' && document.querySelector('a-scene').hasLoaded) {
-            isSystemReady = true;
-            statusMsg.innerText = "系統已就緒，請點擊開始";
-            startBtn.disabled = false;
-            console.log("系統就緒檢查完成");
-        } else {
-            // 如果還沒就緒，延遲檢查
-            setTimeout(checkSystemReady, 500);
+    // --- 遊戲變數 ---
+    let scores = { blue: 0, red: 0 };
+    let currentTurn = ''; // 'blue' or 'red'
+    let isLocked = false; // 鎖定狀態，防止重複掃描
+    
+    // --- 擴充題庫 (每個主題 5 題，4選1) ---
+    // type: 'D' (Destruction), 'C' (Conservation)
+    // used: 記錄已出的題目索引
+    const quizDatabase = [
+        { 
+            name: "過度捕撈", type: "D", used: [],
+            q: [
+                { t: "哪種捕魚方式最容易破壞海底棲地？", o: ["底拖網", "一支釣", "定置網", "垂釣"], a: 0 },
+                { t: "「混獲」是指什麼？", o: ["意外捕獲非目標物種", "混合多種魚類販賣", "使用混合餌料", "混水摸魚"], a: 0 },
+                { t: "為了永續海洋，我們應該避免購買？", o: ["瀕危魚種", "養殖吳郭魚", "常見的秋刀魚", "蛤蜊"], a: 0 },
+                { t: "大量捕撈小型魚類會造成什麼後果？", o: ["大型魚類食物短缺", "海水變鹹", "海藻減少", "珊瑚白化"], a: 0 },
+                { t: "以下何者是永續海鮮的原則？", o: ["底食原則(吃底層生物)", "只吃魚翅", "專挑稀有魚", "食用未成熟幼魚"], a: 0 }
+            ]
+        },
+        { 
+            name: "濫砍濫伐", type: "D", used: [],
+            q: [
+                { t: "森林砍伐會直接導致哪種氣體增加？", o: ["二氧化碳", "氧氣", "氮氣", "氫氣"], a: 0 },
+                { t: "樹木根部的主要功能不包含？", o: ["吸引雷電", "抓緊土壤", "吸收水分", "防止土石流"], a: 0 },
+                { t: "雨林被稱為地球的什麼？", o: ["地球之肺", "地球之腎", "地球之心", "地球之眼"], a: 0 },
+                { t: "砍伐森林後種植單一作物(如油棕)，會導致？", o: ["生物多樣性降低", "生態更豐富", "土壤更肥沃", "動物更快樂"], a: 0 },
+                { t: "森林消失對水循環的影響？", o: ["降雨調節能力變差", "雨水變多", "河水變清澈", "沒有影響"], a: 0 }
+            ]
+        },
+        { 
+            name: "工業污染", type: "D", used: [],
+            q: [
+                { t: "工廠廢水直接排入河川會導致？", o: ["優養化與生物死亡", "河水變好喝", "魚類長得更大", "增加礦物質"], a: 0 },
+                { t: "「生物放大作用」是指重金屬在哪個階層濃度最高？", o: ["高級消費者(如人類)", "生產者(藻類)", "初級消費者(小蝦)", "河水本身"], a: 0 },
+                { t: "燃燒煤炭產生的硫氧化物會造成？", o: ["酸雨", "彩虹", "地震", "海嘯"], a: 0 },
+                { t: "PM2.5 是指什麼？", o: ["細懸浮微粒", "下午2點半", "一種維生素", "新型機器人"], a: 0 },
+                { t: "處理工業廢水的正確方式？", o: ["經過污水處理廠淨化", "趁半夜偷排", "加水稀釋就好", "排入地下水"], a: 0 }
+            ]
+        },
+        { 
+            name: "外來種入侵", type: "D", used: [],
+            q: [
+                { t: "外來種之所以會氾濫，通常是因為？", o: ["缺乏天敵", "適應力差", "長得可愛", "壽命很短"], a: 0 },
+                { t: "在台灣，哪種生物是著名的外來入侵種？", o: ["福壽螺", "台灣黑熊", "櫻花鉤吻鮭", "台灣藍鵲"], a: 0 },
+                { t: "隨意放生寵物(如巴西龜)會造成？", o: ["破壞本土生態", "增加生物多樣性", "讓烏龜更自由", "改善水質"], a: 0 },
+                { t: "「小花蔓澤蘭」被稱為什麼？", o: ["綠色殺手", "森林公主", "綠色寶石", "爬藤專家"], a: 0 },
+                { t: "防治外來種最有效的方法是？", o: ["源頭管制不隨意引入", "大量噴灑農藥", "訓練本土生物戰鬥", "不理會"], a: 0 }
+            ]
+        },
+        { 
+            name: "氣候變遷", type: "D", used: [],
+            q: [
+                { t: "造成全球暖化的主要溫室氣體是？", o: ["CO2 (二氧化碳)", "O2 (氧氣)", "N2 (氮氣)", "He (氦氣)"], a: 0 },
+                { t: "氣候變遷導致極地冰融，哪種動物受害最深？", o: ["北極熊", "駱駝", "獅子", "無尾熊"], a: 0 },
+                { t: "海水溫度上升會導致珊瑚產生什麼現象？", o: ["白化", "紅化", "變硬", "發光"], a: 0 },
+                { t: "極端氣候不包含下列何者？", o: ["每天準時下雨", "超強颱風", "長期乾旱", "異常熱浪"], a: 0 },
+                { t: "減緩氣候變遷我們可以做什麼？", o: ["節能減碳", "24小時開冷氣", "多吃牛肉", "砍伐樹木"], a: 0 }
+            ]
+        },
+        { 
+            name: "棲地復育", type: "C", used: [],
+            q: [
+                { t: "復育森林時，最好種植？", o: ["原生種植物", "外來種觀賞花", "單一樹種", "塑膠樹"], a: 0 },
+                { t: "「生態廊道」的功能是？", o: ["連結破碎棲地幫助動物遷徙", "給人類散步", "裝飾高速公路", "防止噪音"], a: 0 },
+                { t: "濕地復育的主要好處不包含？", o: ["增加蚊蟲", "淨化水質", "提供鳥類棲息", "防洪"], a: 0 },
+                { t: "復育螢火蟲需要什麼樣的環境？", o: ["乾淨無光害的水域", "熱鬧的公園", "充滿農藥的田", "路燈下"], a: 0 },
+                { t: "人工魚礁的功能是？", o: ["提供魚類躲藏與棲息", "丟棄廢棄物", "阻擋船隻", "美觀"], a: 0 }
+            ]
+        },
+        { 
+            name: "資源回收", type: "C", used: [],
+            q: [
+                { t: "哪種標誌代表資源回收？", o: ["三個循環箭頭", "紅色十字", "黃色閃電", "綠色愛心"], a: 0 },
+                { t: "清洗回收物的主要目的是？", o: ["避免發臭與孳生蚊蟲", "讓回收阿姨開心", "增加重量", "幫垃圾洗澡"], a: 0 },
+                { t: "廢電池應該如何處理？", o: ["回收至專屬回收筒", "丟一般垃圾", "埋在土裡", "燒掉"], a: 0 },
+                { t: "廚餘回收可以用來做什麼？", o: ["堆肥或養豬", "做成餅乾", "鋪路", "蓋房子"], a: 0 },
+                { t: "減少使用塑膠吸管是為了保護哪種動物？", o: ["海龜", "老鷹", "蚯蚓", "松鼠"], a: 0 }
+            ]
+        },
+        { 
+            name: "再生能源", type: "C", used: [],
+            q: [
+                { t: "下列何者屬於再生能源？", o: ["太陽能", "煤炭", "石油", "天然氣"], a: 0 },
+                { t: "台灣西部沿海常見的白色巨大風扇是？", o: ["風力發電機", "超大電風扇", "裝置藝術", "趕鳥器"], a: 0 },
+                { t: "使用再生能源的最大優點？", o: ["減少碳排放", "完全不花錢", "製造更多垃圾", "隨時都有電"], a: 0 },
+                { t: "生質能通常來自？", o: ["動植物有機廢棄物", "石頭", "金屬", "玻璃"], a: 0 },
+                { t: "地熱發電是利用地球內部的什麼？", o: ["熱能", "磁力", "重力", "旋轉"], a: 0 }
+            ]
+        },
+        { 
+            name: "生物多樣性", type: "C", used: [],
+            q: [
+                { t: "生物多樣性高的好處是？", o: ["生態系統較穩定", "環境比較髒亂", "動物容易打架", "沒有好處"], a: 0 },
+                { t: "台灣特有種「石虎」面臨的最大危機？", o: ["路殺與棲地喪失", "被抓去動物園", "食物太多", "天氣太熱"], a: 0 },
+                { t: "保護蜜蜂為什麼很重要？", o: ["幫忙農作物授粉", "可以吃蜂蜜", "蜜蜂很可愛", "針可以用來針灸"], a: 0 },
+                { t: "下列哪個地方的生物多樣性通常最高？", o: ["熱帶雨林", "沙漠", "北極", "水泥城市"], a: 0 },
+                { t: "基因多樣性高代表？", o: ["物種較能抵抗疾病", "物種容易滅絕", "大家長得一模一樣", "容易生病"], a: 0 }
+            ]
+        },
+        { 
+            name: "水資源保護", type: "C", used: [],
+            q: [
+                { t: "洗米水可以用來？", o: ["澆花", "洗車", "洗澡", "直接倒掉"], a: 0 },
+                { t: "台灣雖然雨量多，卻缺水的原因？", o: ["地勢陡峭水流快", "大家不愛喝水", "蒸發太快", "水被偷走了"], a: 0 },
+                { t: "選購洗衣機時，應認明什麼標章？", o: ["省水標章", "優良食品", "正字標記", "CAS"], a: 0 },
+                { t: "保護河川上游森林的主要功能？", o: ["涵養水源", "種高山高麗菜", "蓋豪華民宿", "倒垃圾"], a: 0 },
+                { t: "生活污水中，哪種東西最容易污染水源？", o: ["含磷清潔劑", "洗米水", "茶葉渣", "果皮"], a: 0 }
+            ]
         }
-    }
-
-    // 當頁面完全載入後開始檢查
-    window.addEventListener('load', function() {
-        console.log("頁面已載入");
-        checkSystemReady();
-        
-        // 綁定開始按鈕
-        document.getElementById('start-btn').addEventListener('click', startGame);
-    });
-
-    // 核心啟動函數
-    async function startGame() {
-        if (!isSystemReady) {
-            alert("系統尚未準備完成，請稍候再試");
-            return;
-        }
-
-        const statusMsg = document.getElementById('status-msg');
-        const startBtn = document.getElementById('start-btn');
-        
-        statusMsg.innerText = "正在啟動相機，請允許權限...";
-        startBtn.disabled = true;
-
-        const sceneEl = document.querySelector('a-scene');
-        
-        try {
-            await sceneEl.systems["mindar-image-system"].start();
-            console.log("AR 啟動成功");
-            
-            // 成功後切換 UI
-            document.getElementById('home-screen').style.display = 'none';
-            document.getElementById('ui-layer').style.display = 'block';
-            
-        } catch (error) {
-            console.error("AR 啟動失敗:", error);
-            alert("相機開啟失敗！請確認：\n1. 網址開頭是 https\n2. 使用 Safari(iOS) 或 Chrome(Android)\n3. 已允許相機權限");
-            statusMsg.innerText = "啟動失敗，請重新整理";
-            startBtn.disabled = false;
-        }
-    }
-
-    // 監聽掃描邏輯
-    function setupMarkerListeners() {
-        for (let i = 0; i < 10; i++) {
-            const marker = document.getElementById(`marker${i}`);
-            if (marker) {
-                marker.addEventListener("targetFound", () => {
-                    if (!isLocked) {
-                        const video = document.getElementById(`v${i}`);
-                        if (video) {
-                            video.play().catch(e => console.error("影片播放失敗:", e));
-                            // 5秒後出題
-                            setTimeout(() => { 
-                                if(!isLocked) {
-                                    video.pause();
-                                    startQuiz(i); 
-                                }
-                            }, 5000);
-                        }
-                    }
-                });
-                marker.addEventListener("targetLost", () => { 
-                    const video = document.getElementById(`v${i}`);
-                    if (video) video.pause(); 
-                });
-            }
-        }
-    }
-
-    // 確保場景載入後綁定監聽器
-    const sceneEl = document.querySelector('a-scene');
-    if (sceneEl.hasLoaded) {
-        setupMarkerListeners();
-    } else {
-        sceneEl.addEventListener('loaded', setupMarkerListeners);
-    }
-
-    const quizData = [
-        { name: "過度捕撈", type: "D", q: ["底拖網會破壞海底棲地嗎？", "捕獲幼魚會導致族群枯竭嗎？", "魚類減少會破壞食物鏈嗎？"] },
-        { name: "濫砍濫伐", type: "D", q: ["森林消失會增加二氧化碳嗎？", "樹木能防止土石流嗎？", "伐木會導致生物失去家園嗎？"] },
-        { name: "工業污染", type: "D", q: ["廢水排入河中會殺死魚類嗎？", "重金屬會經食物鏈累積嗎？", "污染會導致水源無法飲用嗎？"] },
-        { name: "外來種入侵", type: "D", q: ["外來種會搶奪本土種食物嗎？", "外來種會因無天敵過度繁殖嗎？", "隨意放生會破壞平衡嗎？"] },
-        { name: "氣候變遷", type: "D", q: ["氣溫上升會導致冰山融化嗎？", "極端氣候會影響作物生長嗎？", "海洋變暖會導致珊瑚白化嗎？"] },
-        { name: "棲地復育", type: "C", q: ["種植原生植物能恢復生態嗎？", "建立生態廊道能幫助遷徙嗎？", "濕地復育能過濾水質嗎？"] },
-        { name: "資源回收", type: "C", q: ["回收能減少廢棄物進海洋嗎？", "減少塑膠能保護海龜嗎？", "回收金屬能減少礦產開發嗎？"] },
-        { name: "再生能源", type: "C", q: ["風力發電能減少碳排放嗎？", "太陽能是永續的能源嗎？", "綠能能減緩全球暖化嗎？"] },
-        { name: "生物多樣性", type: "C", q: ["物種越多生態系統越穩定嗎？", "每種物種都有其功能嗎？", "多樣性高能提升抗病力嗎？"] },
-        { name: "水資源保護", type: "C", q: ["節約用水能保護淡水生態嗎？", "減少化學洗劑能保護水源嗎？", "保護森林能涵養水源嗎？"] }
     ];
 
-    function toggleInstructions(show) {
-        document.getElementById('instruction-modal').style.display = show ? 'block' : 'none';
+    // --- 系統載入檢查 ---
+    window.onload = function() {
+        const checkReady = setInterval(() => {
+            if (typeof AFRAME !== 'undefined' && document.querySelector('a-scene').hasLoaded) {
+                clearInterval(checkReady);
+                document.getElementById('init-btn').innerText = "點擊開啟";
+                document.getElementById('init-btn').disabled = false;
+                document.getElementById('init-btn').style.background = "#4CAF50";
+                document.getElementById('init-btn').style.color = "white";
+                
+                document.getElementById('init-btn').onclick = () => {
+                    document.getElementById('home-screen').style.display = 'none';
+                    document.getElementById('team-select-modal').style.display = 'flex';
+                };
+            }
+        }, 500);
+    };
+
+    // --- 遊戲流程邏輯 ---
+    async function startGame(team) {
+        // 1. 設定先手
+        currentTurn = team;
+        updateTurnUI();
+        
+        // 2. 啟動 AR
+        const sceneEl = document.querySelector('a-scene');
+        try {
+            await sceneEl.systems["mindar-image-system"].start();
+            document.getElementById('team-select-modal').style.display = 'none';
+            document.getElementById('ui-layer').style.display = 'block';
+            
+            // 綁定掃描事件
+            bindMarkers();
+        } catch (e) {
+            alert("相機啟動失敗，請確認使用 HTTPS 及權限");
+        }
     }
 
-    function startQuiz(id) {
-        isLocked = true;
-        const card = quizData[id];
-        const randomQ = card.q[Math.floor(Math.random() * card.q.length)];
+    function updateTurnUI() {
+        const banner = document.getElementById('turn-banner');
+        if (currentTurn === 'blue') {
+            banner.innerText = "現在回合：藍方 (BLUE)";
+            banner.style.background = "#4b6cb7";
+            banner.style.border = "3px solid #89a5e6";
+        } else {
+            banner.innerText = "現在回合：紅方 (RED)";
+            banner.style.background = "#D31027";
+            banner.style.border = "3px solid #ff8a95";
+        }
+    }
+
+    function bindMarkers() {
+        for (let i = 0; i < 10; i++) {
+            const m = document.getElementById(`marker${i}`);
+            m.addEventListener("targetFound", () => handleScan(i));
+            m.addEventListener("targetLost", () => {
+                const v = document.getElementById(`v${i}`);
+                if(v) v.pause();
+            });
+        }
+    }
+
+    function handleScan(index) {
+        if (isLocked) return;
+        
+        const video = document.getElementById(`v${index}`);
+        video.play();
+        
+        // 顯示大字卡
+        const card = quizDatabase[index];
+        const toast = document.getElementById('theme-toast');
+        toast.innerText = card.name;
+        toast.style.display = 'block';
+        toast.style.animation = 'none';
+        toast.offsetHeight; /* trigger reflow */
+        toast.style.animation = 'popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+
+        // 5秒後進入題目
+        setTimeout(() => {
+            if (!isLocked) {
+                isLocked = true; // 鎖定直到回合結束
+                video.pause();
+                toast.style.display = 'none';
+                showQuestion(index);
+            }
+        }, 5000); // 影片播放時間
+    }
+
+    function showQuestion(cardIndex) {
+        const card = quizDatabase[cardIndex];
+        
+        // 篩選未出過的題目
+        let availableIndices = card.q.map((_, i) => i).filter(i => !card.used.includes(i));
+        
+        // 如果題目都出完了，重置 (或顯示題庫已空)
+        if (availableIndices.length === 0) {
+            card.used = [];
+            availableIndices = card.q.map((_, i) => i);
+        }
+
+        // 隨機選一題
+        const qIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+        card.used.push(qIndex); // 標記為已使用
+        const qData = card.q[qIndex];
+
+        // 隨機排列選項
+        // 創建一個包含 [0, 1, 2, 3] 的陣列，其中 0 是正確答案索引
+        let optionsMap = qData.o.map((txt, idx) => ({ txt, isCorrect: idx === 0 }));
+        // 洗牌
+        optionsMap.sort(() => Math.random() - 0.5);
+
+        // 渲染 UI
         document.getElementById('quiz-box').style.display = 'block';
-        document.getElementById('card-title').innerText = card.name;
-        document.getElementById('question-text').innerText = randomQ;
-        const area = document.getElementById('options-area');
-        area.innerHTML = '';
-        ["是 / 可以", "否 / 不可以"].forEach((txt, idx) => {
+        document.getElementById('q-category').innerText = card.type === 'D' ? "【破壞卡】" : "【保育卡】";
+        document.getElementById('q-category').style.color = card.type === 'D' ? "#D31027" : "#4CAF50";
+        document.getElementById('q-title').innerText = card.name;
+        document.getElementById('q-text').innerText = qData.t;
+
+        const optArea = document.getElementById('q-options');
+        optArea.innerHTML = '';
+        
+        optionsMap.forEach(opt => {
             const btn = document.createElement('button');
-            btn.className = 'ans-btn';
-            btn.innerText = txt;
-            btn.onclick = () => checkAns(idx === 0, card.type);
-            area.appendChild(btn);
+            btn.className = 'option-btn';
+            btn.innerText = opt.txt;
+            btn.onclick = () => handleAnswer(opt.isCorrect, card.type);
+            optArea.appendChild(btn);
         });
     }
 
-    function checkAns(correct, type) {
-        let title = "", body = "";
-        if (type === "D") {
-            if (correct) { title = "🎉 答對了！"; body = "對手扣 10 分！"; oppScore -= 10; }
-            else { title = "❌ 答錯了！"; body = "正確答案是「是」。自己扣 10 分"; myScore -= 10; }
-        } else {
-            if (correct) { title = "🌿 答對了！"; body = "自己加 10 分！"; myScore += 10; }
-            else { title = "❌ 答錯了！"; body = "正確答案是「是」"; }
-        }
-        document.getElementById('score-me').innerText = myScore;
-        document.getElementById('score-opp').innerText = oppScore;
+    function handleAnswer(isCorrect, cardType) {
         document.getElementById('quiz-box').style.display = 'none';
-        document.getElementById('feedback-title').innerText = title;
-        document.getElementById('feedback-body').innerText = body;
-        document.getElementById('result-msg').style.display = 'flex';
+        
+        let title = "", scoreText = "", detail = "";
+        
+        // --- 攻守計分邏輯 ---
+        // 1. 破壞卡 (Destruction)
+        if (cardType === 'D') {
+            if (isCorrect) {
+                // 答對：扣敵方 10 分
+                title = "🎉 攻擊成功！";
+                if (currentTurn === 'blue') {
+                    scores.red -= 10;
+                    detail = "藍方精準指出環境問題，紅方受到傷害 -10 分";
+                } else {
+                    scores.blue -= 10;
+                    detail = "紅方精準指出環境問題，藍方受到傷害 -10 分";
+                }
+                scoreText = "敵方 -10";
+            } else {
+                // 答錯：扣己方 10 分
+                title = "💥 自食惡果！";
+                if (currentTurn === 'blue') {
+                    scores.blue -= 10;
+                    detail = "藍方觀念錯誤，反而害到自己 -10 分";
+                } else {
+                    scores.red -= 10;
+                    detail = "紅方觀念錯誤，反而害到自己 -10 分";
+                }
+                scoreText = "己方 -10";
+            }
+        } 
+        // 2. 保育卡 (Conservation)
+        else {
+            if (isCorrect) {
+                // 答對：加己方 10 分
+                title = "🌿 保育成功！";
+                if (currentTurn === 'blue') {
+                    scores.blue += 10;
+                } else {
+                    scores.red += 10;
+                }
+                detail = "正確的保育觀念讓環境變得更好了！";
+                scoreText = "己方 +10";
+            } else {
+                // 答錯：不加分
+                title = "💨 錯失良機";
+                detail = "可惜答錯了，環境沒有獲得改善。";
+                scoreText = "+0";
+            }
+        }
+
+        // 更新分數顯示
+        document.getElementById('score-blue').innerText = scores.blue;
+        document.getElementById('score-red').innerText = scores.red;
+
+        // 顯示結算
+        const resDiv = document.getElementById('result-msg');
+        resDiv.style.display = 'flex';
+        document.getElementById('res-title').innerText = title;
+        document.getElementById('res-score').innerText = scoreText;
+        document.getElementById('res-detail').innerText = detail;
     }
 
-    function closeFeedback() {
+    function nextTurn() {
+        // 隱藏結算，切換回合
         document.getElementById('result-msg').style.display = 'none';
-        setTimeout(() => { isLocked = false; }, 3000);
+        
+        currentTurn = (currentTurn === 'blue') ? 'red' : 'blue';
+        updateTurnUI();
+        
+        // 解鎖，允許下一次掃描
+        isLocked = false;
     }
+
 </script>
 </body>
 </html>
