@@ -30,7 +30,6 @@
         .btn-blue { background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%); border: 2px solid #89a5e6; }
         .btn-red { background: linear-gradient(90deg, #D31027 0%, #EA384D 100%); border: 2px solid #ff8a95; }
 
-        /* 遊戲說明彈窗優化 */
         #instruction-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 90%; max-width: 500px; height: 80vh; overflow-y: auto;
@@ -66,10 +65,16 @@
         #btn-natural { background: rgba(80, 80, 80, 0.6); transition: 0.3s; }
         #btn-natural.active { background: linear-gradient(45deg, #FF512F, #DD2476); border-color: #FFD700; box-shadow: 0 0 15px #FF512F; }
 
+        /* --- 修正：主題大字手機排版 --- */
         #theme-toast {
             position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.85); color: #FFD700; padding: 30px 50px; border-radius: 20px; border: 3px solid #FFD700;
-            font-size: 32px; font-weight: bold; text-align: center; display: none; z-index: 1500;
+            background: rgba(0, 0, 0, 0.85); color: #FFD700;
+            padding: 25px 20px; border-radius: 20px; border: 3px solid #FFD700;
+            font-size: 28px; line-height: 1.4; font-weight: bold; text-align: center;
+            display: none; z-index: 1500;
+            width: 85%; max-width: 320px; /* 控制寬度 */
+            box-sizing: border-box;
+            word-break: break-all;
             animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         @keyframes popIn { from { transform: translate(-50%, -50%) scale(0); } to { transform: translate(-50%, -50%) scale(1); } }
@@ -87,7 +92,7 @@
 
 <div id="home-screen">
     <h1 style="font-size: 2.5em;">AR 生態探險</h1>
-    <p style="opacity: 0.8; margin-bottom: 30px;">環境教育對抗賽 [cite: 1]</p>
+    <p style="opacity: 0.8; margin-bottom: 30px;">紅藍對抗・環境保育桌遊</p>
     <button class="btn" onclick="toggleInstructions(true)" style="background: #FF9800; color: white; padding: 12px 40px; font-size: 18px; margin-bottom: 20px;">📖 遊戲規則與格子說明</button>
     <button id="init-btn" class="btn" style="padding: 15px 50px; font-size: 22px; background: white; color: #333;" disabled>載入中...</button>
 </div>
@@ -101,7 +106,7 @@
         <li><b>破壞事件格：</b> 必須從「破壞卡」中抽一張掃描。</li>
         <li><b>保育事件格：</b> 必須從「保育卡」中抽一張掃描。</li>
         <li><b>天擇事件格：</b> 須先點擊螢幕上的<b>「天擇按鈕」</b>，隨後由對手在所有卡片中幫你選一張掃描。 </li>
-        <li><b>監獄格：</b> 踩到後立即停止，下回合不可移動棋子，且該回合須直接按下<b>「強制換人」</b>按鈕。</li>
+        <li><b>監獄格：</b> 踩到後立即停止，下回合不可移動棋子，且該回合及下回合須直接按下<b>「強制換人」</b>按鈕。</li>
         <li><b>空格：</b> 無法執行任何行動，請直接按下<b>「強制換人」</b>切換回合。</li>
     </ul>
     <p><b>3. 計分規則：</b></p>
@@ -177,7 +182,7 @@
     let scores = { blue: 0, red: 0 }, currentTurn = '', isLocked = false, isGameOver = false, isNaturalSelection = false;
     const quizDatabase = [
         { name: "過度捕撈", type: "D", used: [], q: [{ t: "哪種捕魚方式最容易破壞海底棲地？", o: ["底拖網", "一支釣", "定置網", "垂釣"], a: 0 }, { t: "「混獲」是指什麼？", o: ["意外捕獲非目標物種", "混合多種魚類販賣", "使用混合餌料", "混水摸魚"], a: 0 }, { t: "為了永續海洋，我們應該避免購買？", o: ["瀕危魚種", "養殖吳郭魚", "常見的秋刀魚", "蛤蜊"], a: 0 }, { t: "大量捕撈小型魚類會造成什麼後果？", o: ["大型魚類食物短缺", "海水變鹹", "海藻減少", "珊瑚白化"], a: 0 }, { t: "以下何者是永續海鮮的原則？", o: ["底食原則(吃底層生物)", "只吃魚翅", "專挑稀有魚", "食用未成熟幼魚"], a: 0 }] },
-        { name: "濫砍濫伐", type: "D", used: [], q: [{ t: "森林砍伐會直接導致哪種氣體增加？", o: ["二氧化碳", "氧氣", "氮氣", "氫氣"], a: 0 }, { t: "樹木根部的主要功能不包含？", o: ["吸引雷電", "抓緊土壤", "吸收水分", "防止土石流"], a: 0 }, { t: "雨林被稱為地球的什麼？", o: ["地球之肺", "地球之腎", "地球之心", "地球之眼"], a: 0 }, { t: "砍伐森林後種植單一作物(如油棕)，會導致？", o: ["生物多樣性降低", "生態更豐富", "土壤更肥沃", "動物更快樂"], a: 0 }, { t: "森林消失對水循環的影響？", o: ["降雨調節能力變差", "雨水變多", "河水變清澈", "沒有影響"], a: 0 }] },
+        { name: "濫砍濫伐", type: "D", used: [], q: [{ t: "森林砍伐會直接導致哪種氣體增加？", o: ["二氧化碳", "氧氣", "氮氣", "氫氣"], a: 0 }, { t: "樹木根部的主要功能不包含？", o: ["吸引雷電", "抓緊土壤", "吸收水分", "防止土石流"], a: 0 }, { t: "雨林被稱為地球的什麼？", o: ["地球之肺", "地球之腎", "地球之心", "地球之眼"], a: 0 }, { t: "砍伐森林後種種單一作物(如油棕)，會導致？", o: ["生物多樣性降低", "生態更豐富", "土壤更肥沃", "動物更快樂"], a: 0 }, { t: "森林消失對水循環的影響？", o: ["降雨調節能力變差", "雨水變多", "河水變清澈", "沒有影響"], a: 0 }] },
         { name: "工業污染", type: "D", used: [], q: [{ t: "工廠廢水直接排入河川會導致？", o: ["優養化與生物死亡", "河水變好喝", "魚類長得更大", "增加礦物質"], a: 0 }, { t: "「生物放大作用」是指重金屬在哪個階層濃度最高？", o: ["高級消費者(如人類)", "生產者(藻類)", "初級消費者(小蝦)", "河水本身"], a: 0 }, { t: "燃燒煤炭產生的硫氧化物會造成？", o: ["酸雨", "彩虹", "地震", "海嘯"], a: 0 }, { t: "PM2.5 是指什麼？", o: ["細懸浮微粒", "下午2點半", "一種維生素", "新型機器人"], a: 0 }, { t: "處理工業廢水的正確方式？", o: ["經過污水處理廠淨化", "趁半夜偷排", "加水稀釋就好", "排入地下水"], a: 0 }] },
         { name: "外來種入侵", type: "D", used: [], q: [{ t: "外來種之所以會氾濫，通常是因為？", o: ["缺乏天敵", "適應力差", "長得可愛", "壽命很短"], a: 0 }, { t: "在台灣，哪種生物是著名的外來入侵種？", o: ["福壽螺", "台灣黑熊", "櫻花鉤吻鮭", "台灣藍鵲"], a: 0 }, { t: "隨意放生寵物(如巴西龜)會造成？", o: ["破壞本土生態", "增加生物多樣性", "讓烏龜更自由", "改善水質"], a: 0 }, { t: "「小花蔓澤蘭」被稱為什麼？", o: ["綠色殺手", "森林公主", "綠色寶石", "爬藤專家"], a: 0 }, { t: "防治外來種最有效的方法是？", o: ["源頭管制不隨意引入", "大量噴灑農藥", "訓練本土生物戰鬥", "不理會"], a: 0 }] },
         { name: "氣候變遷", type: "D", used: [], q: [{ t: "造成全球暖化的主要溫室氣體是？", o: ["CO2 (二氧化碳)", "O2 (氧氣)", "N2 (氮氣)", "He (氦氣)"], a: 0 }, { t: "氣候變遷導致極地冰融，哪種動物受害最深？", o: ["北極熊", "駱駝", "獅子", "無尾熊"], a: 0 }, { t: "海水溫度上升會導致珊瑚產生什麼現象？", o: ["白化", "紅化", "變硬", "發光"], a: 0 }, { t: "極端氣候不包含下列何者？", o: ["每天準時下雨", "超強颱風", "長期乾旱", "異常熱浪"], a: 0 }, { t: "減緩氣候變遷我們可以做什麼？", o: ["節能減碳", "24小時開冷氣", "多吃牛肉", "砍伐樹木"], a: 0 }] },
@@ -201,7 +206,6 @@
 
     function toggleInstructions(show) { document.getElementById('instruction-modal').style.display = show ? 'block' : 'none'; }
     
-    // 修正攝影機定格：移除 confirm，直接換人
     function manualNextTurn() {
         for(let i=0; i<10; i++) { const v = document.getElementById(`v${i}`); if(v && !v.paused) v.pause(); }
         document.getElementById('theme-toast').style.display = 'none';
@@ -267,19 +271,37 @@
         options.forEach(opt => { const b = document.createElement('button'); b.className = 'option-btn'; b.innerText = opt.txt; b.onclick = () => handleAnswer(opt.isCorrect, card.type); area.appendChild(b); });
     }
 
+    // --- 修正：分數保險機制 (Math.max(0, ...)) ---
     function handleAnswer(isCorrect, originalType) {
         document.getElementById('quiz-box').style.display = 'none';
         let type = isNaturalSelection ? 'D' : originalType, points = isNaturalSelection ? 20 : 10;
         let title = "", scoreText = "", detail = "";
+        
         if (type === 'D') {
-            if (isCorrect) { title = "🎉 成功！"; if(currentTurn==='blue') scores.red-=points; else scores.blue-=points; scoreText=`敵方 -${points}`; }
-            else { title = "💥 失敗！"; if(currentTurn==='blue') scores.blue-=points; else scores.red-=points; scoreText=`己方 -${points}`; }
+            if (isCorrect) { 
+                title = "🎉 成功！"; 
+                if(currentTurn==='blue') scores.red = Math.max(0, scores.red - points); 
+                else scores.blue = Math.max(0, scores.blue - points); 
+                scoreText=`敵方 -${points}`; 
+            }
+            else { 
+                title = "💥 失敗！"; 
+                if(currentTurn==='blue') scores.blue = Math.max(0, scores.blue - points); 
+                else scores.red = Math.max(0, scores.red - points); 
+                scoreText=`己方 -${points}`; 
+            }
         } else {
-            if (isCorrect) { title = "🌿 成功！"; if(currentTurn==='blue') scores.blue+=points; else scores.red+=points; scoreText=`己方 +${points}`; }
+            if (isCorrect) { 
+                title = "🌿 成功！"; 
+                if(currentTurn==='blue') scores.blue += points; 
+                else scores.red += points; 
+                scoreText=`己方 +${points}`; 
+            }
             else { title = "💨 失敗！"; scoreText="+0"; }
         }
         document.getElementById('score-blue').innerText = scores.blue; document.getElementById('score-red').innerText = scores.red;
         document.getElementById('result-msg').style.display = 'flex';
+        
         if (scores.blue >= 50 || scores.red >= 50) {
             isGameOver = true; document.getElementById('res-title').innerText = "🏆 遊戲結束！";
             document.getElementById('res-score').innerText = `勝者：${scores.blue>=50?'藍方':'紅方'}`;
