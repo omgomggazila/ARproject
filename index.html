@@ -35,6 +35,16 @@
         .btn-blue { background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%); border: 2px solid #89a5e6; }
         .btn-red { background: linear-gradient(90deg, #D31027 0%, #EA384D 100%); border: 2px solid #ff8a95; }
 
+        /* --- 1.1 遊戲說明彈窗 (新加入) --- */
+        #instruction-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 85%; max-width: 450px; background: white; color: #333;
+            padding: 25px; border-radius: 15px; display: none; z-index: 3000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: left;
+        }
+        #instruction-modal h3 { text-align: center; color: #2c3e50; margin-top: 0; }
+        #instruction-modal p { line-height: 1.8; font-size: 16px; }
+
         /* --- 2. 遊戲中 UI (分數與回合) --- */
         #ui-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 1000; }
         
@@ -96,10 +106,29 @@
 
 <div id="home-screen">
     <h1 style="font-size: 2.8em; text-shadow: 0 0 20px rgba(0,255,255,0.5);">AR 生態探險</h1>
-    <p style="opacity: 0.8; margin-bottom: 50px;">紅藍對抗・環境保育桌遊</p>
+    <p style="opacity: 0.8; margin-bottom: 30px;">紅藍對抗・環境保育桌遊</p>
+    
+    <button class="btn" onclick="toggleInstructions(true)" style="background: #FF9800; color: white; padding: 12px 40px; font-size: 18px; margin-bottom: 20px;">
+        📖 遊戲說明
+    </button>
+    
     <button id="init-btn" class="btn" style="padding: 15px 50px; font-size: 22px; background: white; color: #333;" disabled>
         系統載入中...
     </button>
+</div>
+
+<div id="instruction-modal">
+    <h3>📖 遊戲說明</h3>
+    <hr style="border: 0; border-top: 1px solid #eee;">
+    <p>
+        1. <b>分組對抗</b>：分為藍方與紅方，雙方輪流抽卡掃描。<br>
+        2. <b>卡牌任務</b>：<br>
+           - 掃描<b>破壞卡</b>：答對扣敵方分數，答錯扣自己。<br>
+           - 掃描<b>保育卡</b>：答對加自己分數。<br>
+        3. <b>獲勝條件</b>：<br>
+           🏆 率先累積達到 <b>50 分</b> 的隊伍獲勝！
+    </p>
+    <button class="btn" onclick="toggleInstructions(false)" style="background: #2c3e50; color: white; width: 100%; padding: 12px;">我知道了</button>
 </div>
 
 <div id="team-select-modal">
@@ -135,7 +164,7 @@
     <h1 id="res-title" style="font-size: 60px; margin: 0;"></h1>
     <h3 id="res-score" style="color: yellow;"></h3>
     <p id="res-detail" style="font-size: 18px; margin-top: 20px; max-width: 80%; line-height: 1.6;"></p>
-    <button class="btn" style="background: white; color: black; padding: 15px 40px; margin-top: 30px;" onclick="nextTurn()">
+    <button id="res-btn" class="btn" style="background: white; color: black; padding: 15px 40px; margin-top: 30px;" onclick="nextTurn()">
         換對方回合
     </button>
 </div>
@@ -178,12 +207,11 @@
 <script>
     // --- 遊戲變數 ---
     let scores = { blue: 0, red: 0 };
-    let currentTurn = ''; // 'blue' or 'red'
-    let isLocked = false; // 鎖定狀態，防止重複掃描
+    let currentTurn = ''; 
+    let isLocked = false; 
+    let isGameOver = false; // 新增遊戲結束狀態
     
-    // --- 擴充題庫 (每個主題 5 題，4選1) ---
-    // type: 'D' (Destruction), 'C' (Conservation)
-    // used: 記錄已出的題目索引
+    // --- 題庫 (維持原樣) ---
     const quizDatabase = [
         { 
             name: "過度捕撈", type: "D", used: [],
@@ -305,20 +333,21 @@
         }, 500);
     };
 
+    // --- 遊戲說明開關 ---
+    function toggleInstructions(show) {
+        document.getElementById('instruction-modal').style.display = show ? 'block' : 'none';
+    }
+
     // --- 遊戲流程邏輯 ---
     async function startGame(team) {
-        // 1. 設定先手
         currentTurn = team;
         updateTurnUI();
         
-        // 2. 啟動 AR
         const sceneEl = document.querySelector('a-scene');
         try {
             await sceneEl.systems["mindar-image-system"].start();
             document.getElementById('team-select-modal').style.display = 'none';
             document.getElementById('ui-layer').style.display = 'block';
-            
-            // 綁定掃描事件
             bindMarkers();
         } catch (e) {
             alert("相機啟動失敗，請確認使用 HTTPS 及權限");
@@ -350,55 +379,45 @@
     }
 
     function handleScan(index) {
-        if (isLocked) return;
+        if (isLocked || isGameOver) return;
         
         const video = document.getElementById(`v${index}`);
         video.play();
         
-        // 顯示大字卡
         const card = quizDatabase[index];
         const toast = document.getElementById('theme-toast');
         toast.innerText = card.name;
         toast.style.display = 'block';
         toast.style.animation = 'none';
-        toast.offsetHeight; /* trigger reflow */
+        toast.offsetHeight;
         toast.style.animation = 'popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
 
-        // 5秒後進入題目
         setTimeout(() => {
-            if (!isLocked) {
-                isLocked = true; // 鎖定直到回合結束
+            if (!isLocked && !isGameOver) {
+                isLocked = true;
                 video.pause();
                 toast.style.display = 'none';
                 showQuestion(index);
             }
-        }, 5000); // 影片播放時間
+        }, 5000);
     }
 
     function showQuestion(cardIndex) {
         const card = quizDatabase[cardIndex];
-        
-        // 篩選未出過的題目
         let availableIndices = card.q.map((_, i) => i).filter(i => !card.used.includes(i));
         
-        // 如果題目都出完了，重置 (或顯示題庫已空)
         if (availableIndices.length === 0) {
             card.used = [];
             availableIndices = card.q.map((_, i) => i);
         }
 
-        // 隨機選一題
         const qIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-        card.used.push(qIndex); // 標記為已使用
+        card.used.push(qIndex);
         const qData = card.q[qIndex];
 
-        // 隨機排列選項
-        // 創建一個包含 [0, 1, 2, 3] 的陣列，其中 0 是正確答案索引
         let optionsMap = qData.o.map((txt, idx) => ({ txt, isCorrect: idx === 0 }));
-        // 洗牌
         optionsMap.sort(() => Math.random() - 0.5);
 
-        // 渲染 UI
         document.getElementById('quiz-box').style.display = 'block';
         document.getElementById('q-category').innerText = card.type === 'D' ? "【破壞卡】" : "【保育卡】";
         document.getElementById('q-category').style.color = card.type === 'D' ? "#D31027" : "#4CAF50";
@@ -422,76 +441,86 @@
         
         let title = "", scoreText = "", detail = "";
         
-        // --- 攻守計分邏輯 ---
-        // 1. 破壞卡 (Destruction)
         if (cardType === 'D') {
             if (isCorrect) {
-                // 答對：扣敵方 10 分
                 title = "🎉 攻擊成功！";
                 if (currentTurn === 'blue') {
                     scores.red -= 10;
-                    detail = "藍方精準指出環境問題，紅方受到傷害 -10 分";
+                    detail = "藍方精準指出環境問題，紅方 -10 分";
                 } else {
                     scores.blue -= 10;
-                    detail = "紅方精準指出環境問題，藍方受到傷害 -10 分";
+                    detail = "紅方精準指出環境問題，藍方 -10 分";
                 }
                 scoreText = "敵方 -10";
             } else {
-                // 答錯：扣己方 10 分
                 title = "💥 自食惡果！";
                 if (currentTurn === 'blue') {
                     scores.blue -= 10;
-                    detail = "藍方觀念錯誤，反而害到自己 -10 分";
+                    detail = "藍方觀念錯誤，自己 -10 分";
                 } else {
                     scores.red -= 10;
-                    detail = "紅方觀念錯誤，反而害到自己 -10 分";
+                    detail = "紅方觀念錯誤，自己 -10 分";
                 }
                 scoreText = "己方 -10";
             }
         } 
-        // 2. 保育卡 (Conservation)
         else {
             if (isCorrect) {
-                // 答對：加己方 10 分
                 title = "🌿 保育成功！";
                 if (currentTurn === 'blue') {
                     scores.blue += 10;
                 } else {
                     scores.red += 10;
                 }
-                detail = "正確的保育觀念讓環境變得更好了！";
+                detail = "環境變得更好了！";
                 scoreText = "己方 +10";
             } else {
-                // 答錯：不加分
                 title = "💨 錯失良機";
-                detail = "可惜答錯了，環境沒有獲得改善。";
+                detail = "可惜答錯了，沒有加分。";
                 scoreText = "+0";
             }
         }
 
-        // 更新分數顯示
+        // 更新分數 UI
         document.getElementById('score-blue').innerText = scores.blue;
         document.getElementById('score-red').innerText = scores.red;
 
-        // 顯示結算
         const resDiv = document.getElementById('result-msg');
         resDiv.style.display = 'flex';
-        document.getElementById('res-title').innerText = title;
-        document.getElementById('res-score').innerText = scoreText;
-        document.getElementById('res-detail').innerText = detail;
+        
+        // --- 檢查勝利條件 ( >= 50 分 ) ---
+        if (scores.blue >= 50 || scores.red >= 50) {
+            isGameOver = true;
+            let winner = scores.blue >= 50 ? "藍方 (BLUE)" : "紅方 (RED)";
+            let color = scores.blue >= 50 ? "#4b6cb7" : "#D31027";
+            
+            document.getElementById('res-title').innerText = "🏆 遊戲結束！";
+            document.getElementById('res-score').innerText = `獲勝者：${winner}`;
+            document.getElementById('res-detail').innerText = `恭喜 ${winner} 率先達成 50 分目標，守護了我們的地球！`;
+            
+            // 變更按鈕功能為「重新開始」
+            const btn = document.getElementById('res-btn');
+            btn.innerText = "重新開始";
+            btn.onclick = () => location.reload(); // 重新整理頁面
+            
+        } else {
+            // 一般回合結算
+            document.getElementById('res-title').innerText = title;
+            document.getElementById('res-score').innerText = scoreText;
+            document.getElementById('res-detail').innerText = detail;
+            
+            const btn = document.getElementById('res-btn');
+            btn.innerText = "換對方回合";
+            btn.onclick = nextTurn;
+        }
     }
 
     function nextTurn() {
-        // 隱藏結算，切換回合
         document.getElementById('result-msg').style.display = 'none';
-        
         currentTurn = (currentTurn === 'blue') ? 'red' : 'blue';
         updateTurnUI();
-        
-        // 解鎖，允許下一次掃描
         isLocked = false;
     }
-
 </script>
 </body>
 </html>
