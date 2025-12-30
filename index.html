@@ -3,11 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR生態探險：影片教育版</title>
+    <title>AR生態探險：環境保育教育桌遊系統</title>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; font-family: "Microsoft JhengHei", sans-serif; }
-        #ui-layer { position: fixed; top: 10px; left: 10px; z-index: 1000; background: rgba(0,0,0,0.8); color: white; padding: 12px; border-radius: 8px; font-size: 16px; }
+        body { margin: 0; overflow: hidden; font-family: "Microsoft JhengHei", sans-serif; background-color: #000; }
+        
+        /* 首頁樣式 */
+        #home-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 2000; color: white; text-align: center;
+        }
+        .menu-btn {
+            background: #4CAF50; color: white; padding: 15px 40px; border: none;
+            border-radius: 30px; font-size: 20px; cursor: pointer; margin: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s;
+        }
+        .menu-btn:active { transform: scale(0.95); }
+
+        /* 遊戲說明彈窗 */
+        #instruction-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 80%; max-width: 400px; background: white; color: #333;
+            padding: 20px; border-radius: 15px; display: none; z-index: 3000;
+        }
+
+        /* 遊戲 UI */
+        #ui-layer { position: fixed; top: 10px; left: 10px; z-index: 1000; background: rgba(0,0,0,0.8); color: white; padding: 12px; border-radius: 8px; display: none; }
         #quiz-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; background: white; padding: 25px; border-radius: 15px; display: none; width: 85%; max-width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .ans-btn { background: #2c3e50; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin: 8px 0; width: 100%; font-size: 16px; }
         #result-msg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); color: white; display: none; z-index: 1002; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
@@ -15,10 +38,28 @@
 </head>
 <body>
 
+<div id="home-screen">
+    <h1 style="font-size: 2.5em; margin-bottom: 10px;">AR 生態探險</h1>
+    <p style="margin-bottom: 40px; opacity: 0.9;">環境保育教育桌遊系統</p>
+    <button class="menu-btn" onclick="toggleInstructions(true)">遊戲說明</button>
+    <button id="start-btn" class="menu-btn" style="background: #2196F3;">遊戲開始</button>
+    <p id="status-msg" style="margin-top: 20px; font-size: 12px; opacity: 0.7;">系統準備中...</p>
+</div>
+
+<div id="instruction-modal">
+    <h3>📖 遊戲說明</h3>
+    <p style="text-align: left; line-height: 1.6;">
+        1. 本遊戲需配合 10 張專屬生態卡牌。<br>
+        2. 掃描<b>破壞卡</b>：答對扣對手 10 分，答錯扣自己 10 分。<br>
+        3. 掃描<b>保育卡</b>：答對自己加 10 分，答錯不加分。<br>
+        4. 請確保在光線充足處進行掃描。
+    </p>
+    <button class="ans-btn" onclick="toggleInstructions(false)">我知道了</button>
+</div>
+
 <div id="ui-layer">
     <div style="color:#4CAF50">我的分數：<span id="score-me">0</span></div>
-    <div style="color:#FF5252">對手分數：<span id="score-opp">100</span></div>
-    <div style="font-size:12px; margin-top:5px;">狀態：掃描卡牌觀看影片</div>
+    <div style="color:#FF5252">對手分數：<span id="score-opp">0</span></div>
 </div>
 
 <div id="quiz-box">
@@ -29,22 +70,27 @@
 
 <div id="result-msg">
     <h2 id="feedback-title"></h2>
-    <p id="feedback-body" style="font-size: 18px;"></p>
-    <button class="ans-btn" style="width:150px" onclick="closeFeedback()">繼續挑戰</button>
+    <p id="feedback-body"></p>
+    <button class="ans-btn" style="width:150px" onclick="closeFeedback()">繼續</button>
 </div>
 
-<a-scene mindar-image="imageTargetSrc: ./targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+<a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; filterMinCF:0.001; filterBeta:0.01;" 
+         color-space="sRGB" 
+         renderer="colorManagement: true, physicallyCorrectLights" 
+         vr-mode-ui="enabled: false" 
+         device-orientation-permission-ui="enabled: false">
+    
     <a-assets>
-        <video id="v0" src="./videos/v0.mp4" loop="false" crossorigin="anonymous"></video>
-        <video id="v1" src="./videos/v1.mp4" loop="false" crossorigin="anonymous"></video>
-        <video id="v2" src="./videos/v2.mp4" loop="false" crossorigin="anonymous"></video>
-        <video id="v3" src="./videos/v3.mp4" loop="false" crossorigin="anonymous"></video>
-        <video id="v4" src="./videos/v4.mp4" loop="false" crossorigin="anonymous"></video>
-        <video id="v5" src="./videos/v5.mp4" loop="false" crossorigin="anonymous"></video>
-        <video id="v6" src="./videos/v6.mp4" loop="false" crossorigin="anonymous"></video>
-        <video id="v7" src="./videos/v7.mp4" loop="false" crossorigin="anonymous"></video>
-        <video id="v8" src="./videos/v8.mp4" loop="false" crossorigin="anonymous"></video>
-        <video id="v9" src="./videos/v9.mp4" loop="false" crossorigin="anonymous"></video>
+        <video id="v0" src="./videos/v0.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
+        <video id="v1" src="./videos/v1.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
+        <video id="v2" src="./videos/v2.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
+        <video id="v3" src="./videos/v3.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
+        <video id="v4" src="./videos/v4.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
+        <video id="v5" src="./videos/v5.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
+        <video id="v6" src="./videos/v6.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
+        <video id="v7" src="./videos/v7.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
+        <video id="v8" src="./videos/v8.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
+        <video id="v9" src="./videos/v9.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -55,14 +101,11 @@
             const target = document.createElement('a-entity');
             target.setAttribute('mindar-image-target', `targetIndex: ${i}`);
             target.id = `marker${i}`;
-            
-            // 影片顯示平面
             const videoPlane = document.createElement('a-video');
             videoPlane.setAttribute('src', `#v${i}`);
             videoPlane.setAttribute('width', '1');
             videoPlane.setAttribute('height', '0.75');
             videoPlane.setAttribute('position', '0 0 0');
-            
             target.appendChild(videoPlane);
             scene.appendChild(target);
         }
@@ -71,8 +114,93 @@
 
 <script>
     let myScore = 0, oppScore = 100, isLocked = false;
+    let isSystemReady = false;
 
-    // 隨機題目池資料 (每張卡牌 3 題)
+    // 改進的系統就緒檢查
+    function checkSystemReady() {
+        const statusMsg = document.getElementById('status-msg');
+        const startBtn = document.getElementById('start-btn');
+        
+        // 檢查 A-Frame 是否已載入
+        if (typeof AFRAME !== 'undefined' && document.querySelector('a-scene').hasLoaded) {
+            isSystemReady = true;
+            statusMsg.innerText = "系統已就緒，請點擊開始";
+            startBtn.disabled = false;
+            startBtn.style.opacity = "1";
+            console.log("系統就緒檢查完成");
+        } else {
+            // 如果還沒就緒，延遲檢查
+            setTimeout(checkSystemReady, 500);
+        }
+    }
+
+    // 監聽 A-Frame 載入事件
+    document.querySelector('a-scene').addEventListener('loaded', function() {
+        console.log("A-Frame 場景已載入");
+        checkSystemReady();
+    });
+
+    // 也使用 DOMContentLoaded 作為備份
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM 已載入");
+        checkSystemReady();
+        
+        // 綁定開始按鈕
+        document.getElementById('start-btn').addEventListener('click', startGame);
+    });
+
+    // 核心啟動函數 - 使用 async/await 改進錯誤處理
+    async function startGame() {
+        if (!isSystemReady) {
+            alert("系統尚未準備完成，請稍候再試");
+            return;
+        }
+
+        const statusMsg = document.getElementById('status-msg');
+        const startBtn = document.getElementById('start-btn');
+        
+        statusMsg.innerText = "正在啟動相機，請稍候...";
+        startBtn.disabled = true;
+        startBtn.style.opacity = "0.5";
+
+        const sceneEl = document.querySelector('a-scene');
+        
+        try {
+            // 先確保 MindAR 系統已載入
+            await sceneEl.systems["mindar-image-system"].start();
+            
+            console.log("AR 啟動成功");
+            
+            // 成功後切換 UI
+            document.getElementById('home-screen').style.display = 'none';
+            document.getElementById('ui-layer').style.display = 'block';
+            
+        } catch (error) {
+            console.error("AR 啟動失敗:", error);
+            
+            let errorMsg = "相機開啟失敗！\n\n可能原因：\n";
+            if (error.name === 'NotAllowedError') {
+                errorMsg += "1. 相機權限被拒絕\n";
+                errorMsg += "2. 請在瀏覽器設定中允許相機權限\n";
+            } else if (error.name === 'NotFoundError') {
+                errorMsg += "1. 找不到相機設備\n";
+                errorMsg += "2. 請確認您的裝置有相機功能\n";
+            } else if (error.name === 'NotSupportedError') {
+                errorMsg += "1. 您的瀏覽器不支援 AR 功能\n";
+                errorMsg += "2. 請使用 Safari (iOS) 或 Chrome (Android)\n";
+            } else {
+                errorMsg += "1. 請確認已按「允許」相機權限\n";
+                errorMsg += "2. 請使用支援的瀏覽器\n";
+                errorMsg += "3. 請確認網址是 HTTPS 開頭\n";
+            }
+            
+            alert(errorMsg);
+            statusMsg.innerText = "啟動失敗，請檢查權限設定";
+            startBtn.disabled = false;
+            startBtn.style.opacity = "1";
+        }
+    }
+
     const quizData = [
         { name: "過度捕撈", type: "D", q: ["底拖網會破壞海底棲地嗎？", "捕獲幼魚會導致族群枯竭嗎？", "魚類減少會破壞食物鏈嗎？"] },
         { name: "濫砍濫伐", type: "D", q: ["森林消失會增加二氧化碳嗎？", "樹木能防止土石流嗎？", "伐木會導致生物失去家園嗎？"] },
@@ -86,33 +214,48 @@
         { name: "水資源保護", type: "C", q: ["節約用水能保護淡水生態嗎？", "減少化學洗劑能保護水源嗎？", "保護森林能涵養水源嗎？"] }
     ];
 
-    // 綁定掃描事件
-    for (let i = 0; i < 10; i++) {
-        const marker = document.getElementById(`marker${i}`);
-        const video = document.getElementById(`v${i}`);
-
-        marker.addEventListener("targetFound", () => {
-            if (!isLocked) {
-                video.play(); // 開始播放影片
-                // 影片播放 5 秒後彈出題目 (或根據影片長度調整)
-                setTimeout(() => { if(!isLocked) startQuiz(i); }, 5000);
-            }
-        });
-
-        marker.addEventListener("targetLost", () => {
-            video.pause();
-        });
+    function toggleInstructions(show) {
+        document.getElementById('instruction-modal').style.display = show ? 'block' : 'none';
     }
+
+    // 監聽掃描邏輯 - 在系統就緒後設定
+    function setupMarkerListeners() {
+        for (let i = 0; i < 10; i++) {
+            const marker = document.getElementById(`marker${i}`);
+            if (marker) {
+                marker.addEventListener("targetFound", () => {
+                    if (!isLocked) {
+                        const video = document.getElementById(`v${i}`);
+                        if (video) {
+                            video.play().catch(e => console.error("影片播放失敗:", e));
+                            // 5秒後出題
+                            setTimeout(() => { 
+                                if(!isLocked) {
+                                    video.pause();
+                                    startQuiz(i); 
+                                }
+                            }, 5000);
+                        }
+                    }
+                });
+                marker.addEventListener("targetLost", () => { 
+                    const video = document.getElementById(`v${i}`);
+                    if (video) video.pause(); 
+                });
+            }
+        }
+    }
+
+    // 在 A-Frame 載入後設定監聽器
+    document.querySelector('a-scene').addEventListener('loaded', setupMarkerListeners);
 
     function startQuiz(id) {
         isLocked = true;
         const card = quizData[id];
         const randomQ = card.q[Math.floor(Math.random() * card.q.length)];
-        
         document.getElementById('quiz-box').style.display = 'block';
         document.getElementById('card-title').innerText = card.name;
         document.getElementById('question-text').innerText = randomQ;
-        
         const area = document.getElementById('options-area');
         area.innerHTML = '';
         ["是 / 可以", "否 / 不可以"].forEach((txt, idx) => {
@@ -126,27 +269,13 @@
 
     function checkAns(correct, type) {
         let title = "", body = "";
-        if (type === "D") { // 破壞卡
-            if (correct) { 
-                title = "🎉 答對了！"; 
-                body = "你成功揭發環境問題，對手扣 10 分！"; 
-                oppScore -= 10; 
-            } else { 
-                title = "❌ 答錯了！"; 
-                body = "沒能阻止破壞，正確答案是「是」。自己扣 10 分"; 
-                myScore -= 10; 
-            }
-        } else { // 保育卡
-            if (correct) { 
-                title = "🌿 答對了！"; 
-                body = "你完成了生態保護行動，自己加 10 分！"; 
-                myScore += 10; 
-            } else { 
-                title = "❌ 答錯了！"; 
-                body = "保育失敗，再接再厲。正確答案是「是」"; 
-            }
+        if (type === "D") {
+            if (correct) { title = "🎉 答對了！"; body = "對手扣 10 分！"; oppScore -= 10; }
+            else { title = "❌ 答錯了！"; body = "正確答案是「是」。自己扣 10 分"; myScore -= 10; }
+        } else {
+            if (correct) { title = "🌿 答對了！"; body = "自己加 10 分！"; myScore += 10; }
+            else { title = "❌ 答錯了！"; body = "正確答案是「是」"; }
         }
-        
         document.getElementById('score-me').innerText = myScore;
         document.getElementById('score-opp').innerText = oppScore;
         document.getElementById('quiz-box').style.display = 'none';
@@ -157,8 +286,7 @@
 
     function closeFeedback() {
         document.getElementById('result-msg').style.display = 'none';
-        // 5秒冷卻時間避免重複觸發同一張卡
-        setTimeout(() => { isLocked = false; }, 5000);
+        setTimeout(() => { isLocked = false; }, 3000);
     }
 </script>
 </body>
