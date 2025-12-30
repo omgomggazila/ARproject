@@ -10,12 +10,9 @@
     
     <style>
         body { margin: 0; overflow: hidden; font-family: "Microsoft JhengHei", sans-serif; background-color: #000; user-select: none; }
-        
-        /* 通用按鈕樣式 */
         .btn { border: none; border-radius: 50px; cursor: pointer; transition: 0.2s; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .btn:active { transform: scale(0.95); }
 
-        /* --- 1. 首頁與選邊 UI --- */
         #home-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #141E30 0%, #243B55 100%);
@@ -33,20 +30,17 @@
         .btn-blue { background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%); border: 2px solid #89a5e6; }
         .btn-red { background: linear-gradient(90deg, #D31027 0%, #EA384D 100%); border: 2px solid #ff8a95; }
 
-        /* --- 1.1 遊戲說明彈窗 --- */
+        /* 遊戲說明彈窗優化 */
         #instruction-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 85%; max-width: 450px; background: white; color: #333;
-            padding: 25px; border-radius: 15px; display: none; z-index: 3000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: left;
+            width: 90%; max-width: 500px; height: 80vh; overflow-y: auto;
+            background: white; color: #333; padding: 25px; border-radius: 15px; 
+            display: none; z-index: 3000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: left;
         }
         #instruction-modal h3 { text-align: center; color: #2c3e50; margin-top: 0; }
-        #instruction-modal p { line-height: 1.8; font-size: 16px; }
+        #instruction-modal b { color: #d31027; }
 
-        /* --- 2. 遊戲中 UI (分數與回合) --- */
         #ui-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 1000; }
-        
-        /* 分數板 */
         .score-board {
             position: absolute; top: 15px; padding: 10px 20px; border-radius: 10px;
             color: white; font-size: 18px; font-weight: bold;
@@ -56,168 +50,114 @@
         #score-red-box { right: 15px; background: rgba(100, 20, 20, 0.8); border-right: 5px solid #D31027; }
         .big-score { font-size: 28px; }
 
-        /* 回合橫幅動畫 */
         #turn-banner {
             position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
             padding: 10px 40px; border-radius: 30px;
             font-size: 20px; color: white; font-weight: bold;
             box-shadow: 0 0 20px rgba(255,255,255,0.2);
-            transition: background 0.5s, border 0.5s;
+            transition: background 0.5s;
             animation: pulse 2s infinite;
         }
         @keyframes pulse { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.05); } 100% { transform: translateX(-50%) scale(1); } }
 
-        /* --- 2.1 新增控制面板 (換人與天擇按鈕) --- */
-        #control-panel {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 20px; pointer-events: auto;
-        }
-        .ctrl-btn {
-            padding: 12px 25px; font-size: 18px; color: white; border-radius: 30px;
-            border: 2px solid rgba(255,255,255,0.5); backdrop-filter: blur(5px);
-            display: flex; align-items: center; gap: 8px;
-        }
-        /* 換人按鈕 */
+        #control-panel { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; pointer-events: auto; }
+        .ctrl-btn { padding: 10px 20px; font-size: 16px; color: white; border-radius: 30px; border: 2px solid rgba(255,255,255,0.5); backdrop-filter: blur(5px); }
         #btn-switch { background: rgba(0, 0, 0, 0.6); }
-        #btn-switch:hover { background: rgba(0, 0, 0, 0.8); }
-        
-        /* 天擇按鈕 */
         #btn-natural { background: rgba(80, 80, 80, 0.6); transition: 0.3s; }
-        #btn-natural.active { 
-            background: linear-gradient(45deg, #FF512F, #DD2476); 
-            border-color: #FFD700; box-shadow: 0 0 15px #FF512F;
-            animation: shake 0.5s;
-        }
-        @keyframes shake { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
+        #btn-natural.active { background: linear-gradient(45deg, #FF512F, #DD2476); border-color: #FFD700; box-shadow: 0 0 15px #FF512F; }
 
-        /* --- 3. 掃描成功大字卡 --- */
         #theme-toast {
             position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.85); color: #FFD700;
-            padding: 30px 50px; border-radius: 20px; border: 3px solid #FFD700;
-            font-size: 40px; font-weight: bold; text-shadow: 0 0 10px orange;
-            display: none; z-index: 1500; white-space: nowrap;
+            background: rgba(0, 0, 0, 0.85); color: #FFD700; padding: 30px 50px; border-radius: 20px; border: 3px solid #FFD700;
+            font-size: 32px; font-weight: bold; text-align: center; display: none; z-index: 1500;
             animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         @keyframes popIn { from { transform: translate(-50%, -50%) scale(0); } to { transform: translate(-50%, -50%) scale(1); } }
 
-        /* --- 4. 題目與結算 UI --- */
         #quiz-box { 
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             z-index: 1600; background: white; padding: 25px; border-radius: 20px; 
-            display: none; width: 90%; max-width: 400px; text-align: center; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5); pointer-events: auto;
+            display: none; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); pointer-events: auto;
         }
-        .option-btn {
-            display: block; width: 100%; margin: 10px 0; padding: 12px;
-            background: #f0f0f0; border: 2px solid #ddd; border-radius: 10px;
-            font-size: 16px; cursor: pointer; text-align: left;
-        }
-        .option-btn:hover { background: #e0e0e0; }
-
-        #result-msg { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); color: white; display: none; 
-            z-index: 1700; flex-direction: column; justify-content: center; align-items: center; 
-            text-align: center; padding: 20px; pointer-events: auto;
-        }
+        .option-btn { display: block; width: 100%; margin: 10px 0; padding: 12px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; cursor: pointer; text-align: left; }
+        #result-msg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); color: white; display: none; z-index: 1700; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; pointer-events: auto; }
     </style>
 </head>
 <body>
 
 <div id="home-screen">
-    <h1 style="font-size: 2.8em; text-shadow: 0 0 20px rgba(0,255,255,0.5);">AR 生態探險</h1>
-    <p style="opacity: 0.8; margin-bottom: 30px;">紅藍對抗・環境保育桌遊</p>
-    <button class="btn" onclick="toggleInstructions(true)" style="background: #FF9800; color: white; padding: 12px 40px; font-size: 18px; margin-bottom: 20px;">
-        📖 遊戲說明
-    </button>
-    <button id="init-btn" class="btn" style="padding: 15px 50px; font-size: 22px; background: white; color: #333;" disabled>
-        系統載入中...
-    </button>
+    <h1 style="font-size: 2.5em;">AR 生態探險</h1>
+    <p style="opacity: 0.8; margin-bottom: 30px;">環境教育對抗賽 [cite: 1]</p>
+    <button class="btn" onclick="toggleInstructions(true)" style="background: #FF9800; color: white; padding: 12px 40px; font-size: 18px; margin-bottom: 20px;">📖 遊戲規則與格子說明</button>
+    <button id="init-btn" class="btn" style="padding: 15px 50px; font-size: 22px; background: white; color: #333;" disabled>載入中...</button>
 </div>
 
 <div id="instruction-modal">
-    <h3>📖 遊戲說明</h3>
-    <hr style="border: 0; border-top: 1px solid #eee;">
-    <p>
-        1. <b>分組對抗</b>：分為藍方與紅方，雙方輪流抽卡掃描。<br>
-        2. <b>卡牌任務</b>：<br>
-           - 掃描<b>破壞卡</b>：答對扣敵方分數，答錯扣自己。<br>
-           - 掃描<b>保育卡</b>：答對加自己分數。<br>
-        3. <b>特殊功能</b>：<br>
-           - <b>⚡ 天擇模式</b>：開啟後，任何卡片都視為「破壞卡」，且分數變 2 倍（高風險高報酬）。<br>
-        4. <b>獲勝條件</b>：<br>
-           🏆 率先累積達到 <b>50 分</b> 的隊伍獲勝！
-    </p>
-    <button class="btn" onclick="toggleInstructions(false)" style="background: #2c3e50; color: white; width: 100%; padding: 12px;">我知道了</button>
+    <h3>📖 遊戲詳細規則</h3>
+    <hr>
+    <p><b>1. 基本玩法：</b> 雙方輪流投擲骰子，依點數移動棋子。若率先累積達 <b>50 分</b> 即獲勝！ </p>
+    <p><b>2. 格子作用說明：</b></p>
+    <ul>
+        <li><b>破壞事件格：</b> 必須從「破壞卡」中抽一張掃描。</li>
+        <li><b>保育事件格：</b> 必須從「保育卡」中抽一張掃描。</li>
+        <li><b>天擇事件格：</b> 須先點擊螢幕上的<b>「天擇按鈕」</b>，隨後由對手在所有卡片中幫你選一張掃描。 </li>
+        <li><b>監獄格：</b> 踩到後立即停止，下回合不可移動棋子，且該回合須直接按下<b>「強制換人」</b>按鈕。</li>
+        <li><b>空格：</b> 無法執行任何行動，請直接按下<b>「強制換人」</b>切換回合。</li>
+    </ul>
+    <p><b>3. 計分規則：</b></p>
+    <ul>
+        <li><b>破壞卡：</b> 答對扣敵方 10 分；答錯扣己方 10 分。 </li>
+        <li><b>保育卡：</b> 答對加己方 10 分；答錯不扣分。 </li>
+        <li><b>天擇模式下：</b> 所有卡片皆視為破壞卡，且<b>加扣分皆變為 2 倍</b>（答對扣敵方 20 分，答錯扣自己 20 分）。</li>
+    </ul>
+    <button class="btn" onclick="toggleInstructions(false)" style="background: #2c3e50; color: white; width: 100%; padding: 12px;">準備好了！</button>
 </div>
 
 <div id="team-select-modal">
-    <h2>誰先開始？</h2>
-    <p>請擲骰子或猜拳決定先手</p>
+    <h2>決定先手</h2>
     <button class="btn team-btn btn-blue" onclick="startGame('blue')">藍方先攻</button>
     <button class="btn team-btn btn-red" onclick="startGame('red')">紅方先攻</button>
 </div>
 
 <div id="ui-layer">
-    <div id="score-blue-box" class="score-board">
-        <span>藍方 (BLUE)</span>
-        <span id="score-blue" class="big-score">0</span>
-    </div>
-    <div id="score-red-box" class="score-board">
-        <span>紅方 (RED)</span>
-        <span id="score-red" class="big-score">0</span>
-    </div>
-    
-    <div id="turn-banner">準備開始...</div>
-
+    <div id="score-blue-box" class="score-board"><span>藍方</span><span id="score-blue" class="big-score">0</span></div>
+    <div id="score-red-box" class="score-board"><span>紅方</span><span id="score-red" class="big-score">0</span></div>
+    <div id="turn-banner">準備中...</div>
     <div id="control-panel">
-        <button id="btn-switch" class="btn ctrl-btn" onclick="manualNextTurn()">
-            🔄 強制換人
-        </button>
-        <button id="btn-natural" class="btn ctrl-btn" onclick="toggleNaturalSelection()">
-            ⚡ 天擇模式 <span id="ns-status" style="font-size:12px; margin-left:5px;">OFF</span>
-        </button>
+        <button id="btn-switch" class="btn ctrl-btn" onclick="manualNextTurn()">🔄 強制換人</button>
+        <button id="btn-natural" class="btn ctrl-btn" onclick="toggleNaturalSelection()">⚡ 天擇模式 <span id="ns-status">OFF</span></button>
     </div>
 </div>
 
 <div id="theme-toast">主題名稱</div>
-
 <div id="quiz-box">
-    <h3 id="q-category" style="color: #666; font-size: 14px; margin:0;">分類</h3>
-    <h2 id="q-title" style="color: #333; margin: 5px 0 15px 0;">主題</h2>
-    <p id="q-text" style="font-size: 18px; font-weight: bold; line-height: 1.5; text-align: left;">題目載入中...</p>
+    <h3 id="q-category"></h3>
+    <h2 id="q-title"></h2>
+    <p id="q-text"></p>
     <div id="q-options"></div>
 </div>
 
 <div id="result-msg">
-    <h1 id="res-title" style="font-size: 60px; margin: 0;"></h1>
-    <h3 id="res-score" style="color: yellow;"></h3>
-    <p id="res-detail" style="font-size: 18px; margin-top: 20px; max-width: 80%; line-height: 1.6;"></p>
-    <button id="res-btn" class="btn" style="background: white; color: black; padding: 15px 40px; margin-top: 30px;" onclick="nextTurn()">
-        換對方回合
-    </button>
+    <h1 id="res-title"></h1>
+    <h3 id="res-score"></h3>
+    <p id="res-detail"></p>
+    <button id="res-btn" class="btn" style="background: white; color: black; padding: 15px 40px; margin-top: 30px;" onclick="nextTurn()">換對方回合</button>
 </div>
 
-<a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; filterMinCF:0.001; filterBeta:0.01;" 
-         color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" 
-         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-    
+<a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; filterMinCF:0.001; filterBeta:0.01;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
     <a-assets>
-        <video id="v0" src="./videos/v0.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
-        <video id="v1" src="./videos/v1.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
-        <video id="v2" src="./videos/v2.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
-        <video id="v3" src="./videos/v3.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
-        <video id="v4" src="./videos/v4.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
-        <video id="v5" src="./videos/v5.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
-        <video id="v6" src="./videos/v6.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
-        <video id="v7" src="./videos/v7.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
-        <video id="v8" src="./videos/v8.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
-        <video id="v9" src="./videos/v9.mp4" playsinline webkit-playsinline muted crossorigin="anonymous" loop="false"></video>
+        <video id="v0" src="./videos/v0.mp4" playsinline webkit-playsinline muted crossorigin="anonymous"></video>
+        <video id="v1" src="./videos/v1.mp4" playsinline webkit-playsinline muted crossorigin="anonymous"></video>
+        <video id="v2" src="./videos/v2.mp4" playsinline webkit-playsinline muted crossorigin="anonymous"></video>
+        <video id="v3" src="./videos/v3.mp4" playsinline webkit-playsinline muted crossorigin="anonymous"></video>
+        <video id="v4" src="./videos/v4.mp4" playsinline webkit-playsinline muted crossorigin="anonymous"></video>
+        <video id="v5" src="./videos/v5.mp4" playsinline webkit-playsinline muted crossorigin="anonymous"></video>
+        <video id="v6" src="./videos/v6.mp4" playsinline webkit-playsinline muted crossorigin="anonymous"></video>
+        <video id="v7" src="./videos/v7.mp4" playsinline webkit-playsinline muted crossorigin="anonymous"></video>
+        <video id="v8" src="./videos/v8.mp4" playsinline webkit-playsinline muted crossorigin="anonymous"></video>
+        <video id="v9" src="./videos/v9.mp4" playsinline webkit-playsinline muted crossorigin="anonymous"></video>
     </a-assets>
-
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
     <script>
         const scene = document.querySelector('a-scene');
         for (let i = 0; i < 10; i++) {
@@ -226,8 +166,7 @@
             target.id = `marker${i}`;
             const vp = document.createElement('a-video');
             vp.setAttribute('src', `#v${i}`);
-            vp.setAttribute('width', '1');
-            vp.setAttribute('height', '0.75');
+            vp.setAttribute('width', '1'); vp.setAttribute('height', '0.75');
             target.appendChild(vp);
             scene.appendChild(target);
         }
@@ -235,13 +174,7 @@
 </a-scene>
 
 <script>
-    // --- 遊戲變數 ---
-    let scores = { blue: 0, red: 0 };
-    let currentTurn = ''; 
-    let isLocked = false; 
-    let isGameOver = false;
-    let isNaturalSelection = false; // 天擇模式開關
-
+    let scores = { blue: 0, red: 0 }, currentTurn = '', isLocked = false, isGameOver = false, isNaturalSelection = false;
     const quizDatabase = [
         { name: "過度捕撈", type: "D", used: [], q: [{ t: "哪種捕魚方式最容易破壞海底棲地？", o: ["底拖網", "一支釣", "定置網", "垂釣"], a: 0 }, { t: "「混獲」是指什麼？", o: ["意外捕獲非目標物種", "混合多種魚類販賣", "使用混合餌料", "混水摸魚"], a: 0 }, { t: "為了永續海洋，我們應該避免購買？", o: ["瀕危魚種", "養殖吳郭魚", "常見的秋刀魚", "蛤蜊"], a: 0 }, { t: "大量捕撈小型魚類會造成什麼後果？", o: ["大型魚類食物短缺", "海水變鹹", "海藻減少", "珊瑚白化"], a: 0 }, { t: "以下何者是永續海鮮的原則？", o: ["底食原則(吃底層生物)", "只吃魚翅", "專挑稀有魚", "食用未成熟幼魚"], a: 0 }] },
         { name: "濫砍濫伐", type: "D", used: [], q: [{ t: "森林砍伐會直接導致哪種氣體增加？", o: ["二氧化碳", "氧氣", "氮氣", "氫氣"], a: 0 }, { t: "樹木根部的主要功能不包含？", o: ["吸引雷電", "抓緊土壤", "吸收水分", "防止土石流"], a: 0 }, { t: "雨林被稱為地球的什麼？", o: ["地球之肺", "地球之腎", "地球之心", "地球之眼"], a: 0 }, { t: "砍伐森林後種植單一作物(如油棕)，會導致？", o: ["生物多樣性降低", "生態更豐富", "土壤更肥沃", "動物更快樂"], a: 0 }, { t: "森林消失對水循環的影響？", o: ["降雨調節能力變差", "雨水變多", "河水變清澈", "沒有影響"], a: 0 }] },
@@ -259,256 +192,109 @@
         const checkReady = setInterval(() => {
             if (typeof AFRAME !== 'undefined' && document.querySelector('a-scene').hasLoaded) {
                 clearInterval(checkReady);
-                document.getElementById('init-btn').innerText = "點擊開啟";
-                document.getElementById('init-btn').disabled = false;
-                document.getElementById('init-btn').style.background = "#4CAF50";
-                document.getElementById('init-btn').style.color = "white";
-                
-                document.getElementById('init-btn').onclick = () => {
-                    document.getElementById('home-screen').style.display = 'none';
-                    document.getElementById('team-select-modal').style.display = 'flex';
-                };
+                document.getElementById('init-btn').innerText = "點擊開啟"; document.getElementById('init-btn').disabled = false;
+                document.getElementById('init-btn').style.background = "#4CAF50"; document.getElementById('init-btn').style.color = "white";
+                document.getElementById('init-btn').onclick = () => { document.getElementById('home-screen').style.display = 'none'; document.getElementById('team-select-modal').style.display = 'flex'; };
             }
         }, 500);
     };
 
-    function toggleInstructions(show) {
-        document.getElementById('instruction-modal').style.display = show ? 'block' : 'none';
-    }
-
-    // --- 按鈕功能 ---
+    function toggleInstructions(show) { document.getElementById('instruction-modal').style.display = show ? 'block' : 'none'; }
+    
+    // 修正攝影機定格：移除 confirm，直接換人
     function manualNextTurn() {
-        if (confirm("確定要強制換人嗎？")) {
-            // 如果影片正在播放，暫停它
-            for(let i=0; i<10; i++) {
-                const v = document.getElementById(`v${i}`);
-                if(v && !v.paused) v.pause();
-            }
-            // 隱藏可能出現的大字卡或題目
-            document.getElementById('theme-toast').style.display = 'none';
-            document.getElementById('quiz-box').style.display = 'none';
-            document.getElementById('result-msg').style.display = 'none';
-            
-            nextTurn();
-        }
+        for(let i=0; i<10; i++) { const v = document.getElementById(`v${i}`); if(v && !v.paused) v.pause(); }
+        document.getElementById('theme-toast').style.display = 'none';
+        document.getElementById('quiz-box').style.display = 'none';
+        document.getElementById('result-msg').style.display = 'none';
+        nextTurn();
     }
 
     function toggleNaturalSelection() {
         isNaturalSelection = !isNaturalSelection;
-        const btn = document.getElementById('btn-natural');
-        const status = document.getElementById('ns-status');
-        
-        if (isNaturalSelection) {
-            btn.classList.add('active');
-            status.innerText = "ON";
-        } else {
-            btn.classList.remove('active');
-            status.innerText = "OFF";
-        }
+        const btn = document.getElementById('btn-natural'), status = document.getElementById('ns-status');
+        if (isNaturalSelection) { btn.classList.add('active'); status.innerText = "ON"; } 
+        else { btn.classList.remove('active'); status.innerText = "OFF"; }
     }
 
     async function startGame(team) {
-        currentTurn = team;
-        updateTurnUI();
+        currentTurn = team; updateTurnUI();
         const sceneEl = document.querySelector('a-scene');
         try {
             await sceneEl.systems["mindar-image-system"].start();
             document.getElementById('team-select-modal').style.display = 'none';
             document.getElementById('ui-layer').style.display = 'block';
             bindMarkers();
-        } catch (e) {
-            alert("相機啟動失敗，請確認使用 HTTPS 及權限");
-        }
+        } catch (e) { alert("啟動失敗"); }
     }
 
     function updateTurnUI() {
         const banner = document.getElementById('turn-banner');
-        if (currentTurn === 'blue') {
-            banner.innerText = "現在回合：藍方 (BLUE)";
-            banner.style.background = "#4b6cb7";
-            banner.style.border = "3px solid #89a5e6";
-        } else {
-            banner.innerText = "現在回合：紅方 (RED)";
-            banner.style.background = "#D31027";
-            banner.style.border = "3px solid #ff8a95";
-        }
+        banner.innerText = `現在回合：${currentTurn === 'blue' ? '藍方' : '紅方'}`;
+        banner.style.background = currentTurn === 'blue' ? "#4b6cb7" : "#D31027";
     }
 
     function bindMarkers() {
         for (let i = 0; i < 10; i++) {
             const m = document.getElementById(`marker${i}`);
             m.addEventListener("targetFound", () => handleScan(i));
-            m.addEventListener("targetLost", () => {
-                const v = document.getElementById(`v${i}`);
-                if(v) v.pause();
-            });
+            m.addEventListener("targetLost", () => { const v = document.getElementById(`v${i}`); if(v) v.pause(); });
         }
     }
 
     function handleScan(index) {
         if (isLocked || isGameOver) return;
-        
-        const video = document.getElementById(`v${index}`);
-        video.play();
-        
-        const card = quizDatabase[index];
-        const toast = document.getElementById('theme-toast');
-        
-        // 天擇模式顯示調整
-        if (isNaturalSelection) {
-            toast.innerHTML = "⚡ " + card.name + " ⚡<br><span style='font-size:24px'>天擇降臨：破壞卡效果 x2</span>";
-            toast.style.color = "#FF512F";
-            toast.style.border = "3px solid #FF512F";
-        } else {
-            toast.innerText = card.name;
-            toast.style.color = "#FFD700";
-            toast.style.border = "3px solid #FFD700";
-        }
-
-        toast.style.display = 'block';
-        toast.style.animation = 'none';
-        toast.offsetHeight;
-        toast.style.animation = 'popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-
-        setTimeout(() => {
-            if (!isLocked && !isGameOver) {
-                isLocked = true;
-                video.pause();
-                toast.style.display = 'none';
-                showQuestion(index);
-            }
-        }, 5000);
+        const video = document.getElementById(`v${index}`); video.play();
+        const card = quizDatabase[index], toast = document.getElementById('theme-toast');
+        toast.innerHTML = isNaturalSelection ? `⚡ ${card.name} ⚡<br>天擇加倍` : card.name;
+        toast.style.display = 'block'; toast.style.animation = 'none'; toast.offsetHeight; toast.style.animation = 'popIn 0.5s';
+        setTimeout(() => { if (!isLocked && !isGameOver) { isLocked = true; video.pause(); toast.style.display = 'none'; showQuestion(index); } }, 5000);
     }
 
     function showQuestion(cardIndex) {
         const card = quizDatabase[cardIndex];
-        let availableIndices = card.q.map((_, i) => i).filter(i => !card.used.includes(i));
-        
-        if (availableIndices.length === 0) {
-            card.used = [];
-            availableIndices = card.q.map((_, i) => i);
-        }
-
-        const qIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-        card.used.push(qIndex);
-        const qData = card.q[qIndex];
-
-        let optionsMap = qData.o.map((txt, idx) => ({ txt, isCorrect: idx === 0 }));
-        optionsMap.sort(() => Math.random() - 0.5);
-
+        let available = card.q.map((_, i) => i).filter(i => !card.used.includes(i));
+        if (available.length === 0) { card.used = []; available = card.q.map((_, i) => i); }
+        const qData = card.q[available[Math.floor(Math.random() * available.length)]];
+        card.used.push(quizDatabase[cardIndex].q.indexOf(qData));
+        let options = qData.o.map((txt, idx) => ({ txt, isCorrect: idx === 0 }));
+        options.sort(() => Math.random() - 0.5);
         document.getElementById('quiz-box').style.display = 'block';
-        
-        // UI 顯示調整
-        let displayType = card.type;
-        if (isNaturalSelection) {
-            displayType = 'D'; // 強制視為破壞卡
-            document.getElementById('q-category').innerText = "【天擇模式：強制破壞卡】";
-            document.getElementById('q-category').style.color = "#FF0000";
-        } else {
-            document.getElementById('q-category').innerText = card.type === 'D' ? "【破壞卡】" : "【保育卡】";
-            document.getElementById('q-category').style.color = card.type === 'D' ? "#D31027" : "#4CAF50";
-        }
-        
-        document.getElementById('q-title').innerText = card.name;
-        document.getElementById('q-text').innerText = qData.t;
-
-        const optArea = document.getElementById('q-options');
-        optArea.innerHTML = '';
-        
-        optionsMap.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'option-btn';
-            btn.innerText = opt.txt;
-            btn.onclick = () => handleAnswer(opt.isCorrect, card.type); // 傳入原始類型，內部再處理 override
-            optArea.appendChild(btn);
-        });
+        document.getElementById('q-category').innerText = isNaturalSelection ? "【天擇：強制破壞 x2】" : (card.type === 'D' ? "【破壞卡】" : "【保育卡】");
+        document.getElementById('q-category').style.color = (isNaturalSelection || card.type === 'D') ? "#D31027" : "#4CAF50";
+        document.getElementById('q-title').innerText = card.name; document.getElementById('q-text').innerText = qData.t;
+        const area = document.getElementById('q-options'); area.innerHTML = '';
+        options.forEach(opt => { const b = document.createElement('button'); b.className = 'option-btn'; b.innerText = opt.txt; b.onclick = () => handleAnswer(opt.isCorrect, card.type); area.appendChild(b); });
     }
 
     function handleAnswer(isCorrect, originalType) {
         document.getElementById('quiz-box').style.display = 'none';
-        
+        let type = isNaturalSelection ? 'D' : originalType, points = isNaturalSelection ? 20 : 10;
         let title = "", scoreText = "", detail = "";
-        
-        // 核心邏輯：如果是天擇模式，強制類型為 'D' 且倍率為 2
-        let effectiveType = isNaturalSelection ? 'D' : originalType;
-        let multiplier = isNaturalSelection ? 2 : 1;
-        let points = 10 * multiplier;
-
-        if (effectiveType === 'D') {
-            // 破壞卡邏輯：答對扣敵方，答錯扣己方
-            if (isCorrect) {
-                title = isNaturalSelection ? "⚡ 天擇攻擊！" : "🎉 攻擊成功！";
-                if (currentTurn === 'blue') {
-                    scores.red -= points;
-                    detail = `藍方成功發動攻勢，紅方 -${points} 分`;
-                } else {
-                    scores.blue -= points;
-                    detail = `紅方成功發動攻勢，藍方 -${points} 分`;
-                }
-                scoreText = `敵方 -${points}`;
-            } else {
-                title = isNaturalSelection ? "⚡ 天擇反噬！" : "💥 自食惡果！";
-                if (currentTurn === 'blue') {
-                    scores.blue -= points;
-                    detail = `藍方觀念錯誤，反受傷害 -${points} 分`;
-                } else {
-                    scores.red -= points;
-                    detail = `紅方觀念錯誤，反受傷害 -${points} 分`;
-                }
-                scoreText = `己方 -${points}`;
-            }
-        } 
-        else {
-            // 保育卡邏輯 (只會在非天擇模式下發生)
-            if (isCorrect) {
-                title = "🌿 保育成功！";
-                if (currentTurn === 'blue') scores.blue += points;
-                else scores.red += points;
-                detail = "環境變得更好了！";
-                scoreText = `己方 +${points}`;
-            } else {
-                title = "💨 錯失良機";
-                detail = "可惜答錯了，沒有加分。";
-                scoreText = "+0";
-            }
-        }
-
-        document.getElementById('score-blue').innerText = scores.blue;
-        document.getElementById('score-red').innerText = scores.red;
-
-        const resDiv = document.getElementById('result-msg');
-        resDiv.style.display = 'flex';
-        
-        if (scores.blue >= 50 || scores.red >= 50) {
-            isGameOver = true;
-            let winner = scores.blue >= 50 ? "藍方 (BLUE)" : "紅方 (RED)";
-            document.getElementById('res-title').innerText = "🏆 遊戲結束！";
-            document.getElementById('res-score').innerText = `獲勝者：${winner}`;
-            document.getElementById('res-detail').innerText = `恭喜 ${winner} 率先達成 50 分目標！`;
-            const btn = document.getElementById('res-btn');
-            btn.innerText = "重新開始";
-            btn.onclick = () => location.reload();
+        if (type === 'D') {
+            if (isCorrect) { title = "🎉 成功！"; if(currentTurn==='blue') scores.red-=points; else scores.blue-=points; scoreText=`敵方 -${points}`; }
+            else { title = "💥 失敗！"; if(currentTurn==='blue') scores.blue-=points; else scores.red-=points; scoreText=`己方 -${points}`; }
         } else {
-            document.getElementById('res-title').innerText = title;
-            document.getElementById('res-score').innerText = scoreText;
-            document.getElementById('res-detail').innerText = detail;
-            const btn = document.getElementById('res-btn');
-            btn.innerText = "換對方回合";
-            btn.onclick = nextTurn;
+            if (isCorrect) { title = "🌿 成功！"; if(currentTurn==='blue') scores.blue+=points; else scores.red+=points; scoreText=`己方 +${points}`; }
+            else { title = "💨 失敗！"; scoreText="+0"; }
+        }
+        document.getElementById('score-blue').innerText = scores.blue; document.getElementById('score-red').innerText = scores.red;
+        document.getElementById('result-msg').style.display = 'flex';
+        if (scores.blue >= 50 || scores.red >= 50) {
+            isGameOver = true; document.getElementById('res-title').innerText = "🏆 遊戲結束！";
+            document.getElementById('res-score').innerText = `勝者：${scores.blue>=50?'藍方':'紅方'}`;
+            const b = document.getElementById('res-btn'); b.innerText = "重玩"; b.onclick = () => location.reload();
+        } else {
+            document.getElementById('res-title').innerText = title; document.getElementById('res-score').innerText = scoreText;
+            document.getElementById('res-btn').innerText = "換人"; document.getElementById('res-btn').onclick = nextTurn;
         }
     }
 
     function nextTurn() {
         document.getElementById('result-msg').style.display = 'none';
-        
-        // 換人後自動關閉天擇模式，確保公平與安全
-        if (isNaturalSelection) {
-            toggleNaturalSelection();
-        }
-
-        currentTurn = (currentTurn === 'blue') ? 'red' : 'blue';
-        updateTurnUI();
-        isLocked = false;
+        if (isNaturalSelection) toggleNaturalSelection();
+        currentTurn = currentTurn === 'blue' ? 'red' : 'blue';
+        updateTurnUI(); isLocked = false;
     }
 </script>
 </body>
