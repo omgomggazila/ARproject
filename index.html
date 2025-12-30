@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR生態探險：環境保育教育桌遊系統</title>
+    
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+    
     <style>
         body { margin: 0; overflow: hidden; font-family: "Microsoft JhengHei", sans-serif; background-color: #000; }
         
@@ -21,6 +25,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s;
         }
         .menu-btn:active { transform: scale(0.95); }
+        .menu-btn:disabled { background: #cccccc !important; cursor: not-allowed; transform: none; }
 
         /* 遊戲說明彈窗 */
         #instruction-modal {
@@ -42,8 +47,8 @@
     <h1 style="font-size: 2.5em; margin-bottom: 10px;">AR 生態探險</h1>
     <p style="margin-bottom: 40px; opacity: 0.9;">環境保育教育桌遊系統</p>
     <button class="menu-btn" onclick="toggleInstructions(true)">遊戲說明</button>
-    <button id="start-btn" class="menu-btn" style="background: #2196F3;">遊戲開始</button>
-    <p id="status-msg" style="margin-top: 20px; font-size: 12px; opacity: 0.7;">系統準備中...</p>
+    <button id="start-btn" class="menu-btn" style="background: #2196F3;" disabled>遊戲開始</button>
+    <p id="status-msg" style="margin-top: 20px; font-size: 12px; opacity: 0.7;">系統載入中...</p>
 </div>
 
 <div id="instruction-modal">
@@ -113,20 +118,19 @@
 </a-scene>
 
 <script>
-    let myScore = 0, oppScore = 100, isLocked = false;
+    let myScore = 0, oppScore = 0, isLocked = false;
     let isSystemReady = false;
 
-    // 改進的系統就緒檢查
+    // 檢查系統是否準備就緒
     function checkSystemReady() {
         const statusMsg = document.getElementById('status-msg');
         const startBtn = document.getElementById('start-btn');
         
-        // 檢查 A-Frame 是否已載入
+        // 修正重點 3: AFRAME 載入檢查
         if (typeof AFRAME !== 'undefined' && document.querySelector('a-scene').hasLoaded) {
             isSystemReady = true;
             statusMsg.innerText = "系統已就緒，請點擊開始";
             startBtn.disabled = false;
-            startBtn.style.opacity = "1";
             console.log("系統就緒檢查完成");
         } else {
             // 如果還沒就緒，延遲檢查
@@ -134,22 +138,16 @@
         }
     }
 
-    // 監聽 A-Frame 載入事件
-    document.querySelector('a-scene').addEventListener('loaded', function() {
-        console.log("A-Frame 場景已載入");
-        checkSystemReady();
-    });
-
-    // 也使用 DOMContentLoaded 作為備份
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log("DOM 已載入");
+    // 當頁面完全載入後開始檢查
+    window.addEventListener('load', function() {
+        console.log("頁面已載入");
         checkSystemReady();
         
         // 綁定開始按鈕
         document.getElementById('start-btn').addEventListener('click', startGame);
     });
 
-    // 核心啟動函數 - 使用 async/await 改進錯誤處理
+    // 核心啟動函數
     async function startGame() {
         if (!isSystemReady) {
             alert("系統尚未準備完成，請稍候再試");
@@ -159,16 +157,13 @@
         const statusMsg = document.getElementById('status-msg');
         const startBtn = document.getElementById('start-btn');
         
-        statusMsg.innerText = "正在啟動相機，請稍候...";
+        statusMsg.innerText = "正在啟動相機，請允許權限...";
         startBtn.disabled = true;
-        startBtn.style.opacity = "0.5";
 
         const sceneEl = document.querySelector('a-scene');
         
         try {
-            // 先確保 MindAR 系統已載入
             await sceneEl.systems["mindar-image-system"].start();
-            
             console.log("AR 啟動成功");
             
             // 成功後切換 UI
@@ -177,48 +172,13 @@
             
         } catch (error) {
             console.error("AR 啟動失敗:", error);
-            
-            let errorMsg = "相機開啟失敗！\n\n可能原因：\n";
-            if (error.name === 'NotAllowedError') {
-                errorMsg += "1. 相機權限被拒絕\n";
-                errorMsg += "2. 請在瀏覽器設定中允許相機權限\n";
-            } else if (error.name === 'NotFoundError') {
-                errorMsg += "1. 找不到相機設備\n";
-                errorMsg += "2. 請確認您的裝置有相機功能\n";
-            } else if (error.name === 'NotSupportedError') {
-                errorMsg += "1. 您的瀏覽器不支援 AR 功能\n";
-                errorMsg += "2. 請使用 Safari (iOS) 或 Chrome (Android)\n";
-            } else {
-                errorMsg += "1. 請確認已按「允許」相機權限\n";
-                errorMsg += "2. 請使用支援的瀏覽器\n";
-                errorMsg += "3. 請確認網址是 HTTPS 開頭\n";
-            }
-            
-            alert(errorMsg);
-            statusMsg.innerText = "啟動失敗，請檢查權限設定";
+            alert("相機開啟失敗！請確認：\n1. 網址開頭是 https\n2. 使用 Safari(iOS) 或 Chrome(Android)\n3. 已允許相機權限");
+            statusMsg.innerText = "啟動失敗，請重新整理";
             startBtn.disabled = false;
-            startBtn.style.opacity = "1";
         }
     }
 
-    const quizData = [
-        { name: "過度捕撈", type: "D", q: ["底拖網會破壞海底棲地嗎？", "捕獲幼魚會導致族群枯竭嗎？", "魚類減少會破壞食物鏈嗎？"] },
-        { name: "濫砍濫伐", type: "D", q: ["森林消失會增加二氧化碳嗎？", "樹木能防止土石流嗎？", "伐木會導致生物失去家園嗎？"] },
-        { name: "工業污染", type: "D", q: ["廢水排入河中會殺死魚類嗎？", "重金屬會經食物鏈累積嗎？", "污染會導致水源無法飲用嗎？"] },
-        { name: "外來種入侵", type: "D", q: ["外來種會搶奪本土種食物嗎？", "外來種會因無天敵過度繁殖嗎？", "隨意放生會破壞平衡嗎？"] },
-        { name: "氣候變遷", type: "D", q: ["氣溫上升會導致冰山融化嗎？", "極端氣候會影響作物生長嗎？", "海洋變暖會導致珊瑚白化嗎？"] },
-        { name: "棲地復育", type: "C", q: ["種植原生植物能恢復生態嗎？", "建立生態廊道能幫助遷徙嗎？", "濕地復育能過濾水質嗎？"] },
-        { name: "資源回收", type: "C", q: ["回收能減少廢棄物進海洋嗎？", "減少塑膠能保護海龜嗎？", "回收金屬能減少礦產開發嗎？"] },
-        { name: "再生能源", type: "C", q: ["風力發電能減少碳排放嗎？", "太陽能是永續的能源嗎？", "綠能能減緩全球暖化嗎？"] },
-        { name: "生物多樣性", type: "C", q: ["物種越多生態系統越穩定嗎？", "每種物種都有其功能嗎？", "多樣性高能提升抗病力嗎？"] },
-        { name: "水資源保護", type: "C", q: ["節約用水能保護淡水生態嗎？", "減少化學洗劑能保護水源嗎？", "保護森林能涵養水源嗎？"] }
-    ];
-
-    function toggleInstructions(show) {
-        document.getElementById('instruction-modal').style.display = show ? 'block' : 'none';
-    }
-
-    // 監聽掃描邏輯 - 在系統就緒後設定
+    // 監聽掃描邏輯
     function setupMarkerListeners() {
         for (let i = 0; i < 10; i++) {
             const marker = document.getElementById(`marker${i}`);
@@ -246,8 +206,30 @@
         }
     }
 
-    // 在 A-Frame 載入後設定監聽器
-    document.querySelector('a-scene').addEventListener('loaded', setupMarkerListeners);
+    // 確保場景載入後綁定監聽器
+    const sceneEl = document.querySelector('a-scene');
+    if (sceneEl.hasLoaded) {
+        setupMarkerListeners();
+    } else {
+        sceneEl.addEventListener('loaded', setupMarkerListeners);
+    }
+
+    const quizData = [
+        { name: "過度捕撈", type: "D", q: ["底拖網會破壞海底棲地嗎？", "捕獲幼魚會導致族群枯竭嗎？", "魚類減少會破壞食物鏈嗎？"] },
+        { name: "濫砍濫伐", type: "D", q: ["森林消失會增加二氧化碳嗎？", "樹木能防止土石流嗎？", "伐木會導致生物失去家園嗎？"] },
+        { name: "工業污染", type: "D", q: ["廢水排入河中會殺死魚類嗎？", "重金屬會經食物鏈累積嗎？", "污染會導致水源無法飲用嗎？"] },
+        { name: "外來種入侵", type: "D", q: ["外來種會搶奪本土種食物嗎？", "外來種會因無天敵過度繁殖嗎？", "隨意放生會破壞平衡嗎？"] },
+        { name: "氣候變遷", type: "D", q: ["氣溫上升會導致冰山融化嗎？", "極端氣候會影響作物生長嗎？", "海洋變暖會導致珊瑚白化嗎？"] },
+        { name: "棲地復育", type: "C", q: ["種植原生植物能恢復生態嗎？", "建立生態廊道能幫助遷徙嗎？", "濕地復育能過濾水質嗎？"] },
+        { name: "資源回收", type: "C", q: ["回收能減少廢棄物進海洋嗎？", "減少塑膠能保護海龜嗎？", "回收金屬能減少礦產開發嗎？"] },
+        { name: "再生能源", type: "C", q: ["風力發電能減少碳排放嗎？", "太陽能是永續的能源嗎？", "綠能能減緩全球暖化嗎？"] },
+        { name: "生物多樣性", type: "C", q: ["物種越多生態系統越穩定嗎？", "每種物種都有其功能嗎？", "多樣性高能提升抗病力嗎？"] },
+        { name: "水資源保護", type: "C", q: ["節約用水能保護淡水生態嗎？", "減少化學洗劑能保護水源嗎？", "保護森林能涵養水源嗎？"] }
+    ];
+
+    function toggleInstructions(show) {
+        document.getElementById('instruction-modal').style.display = show ? 'block' : 'none';
+    }
 
     function startQuiz(id) {
         isLocked = true;
